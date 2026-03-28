@@ -3,7 +3,11 @@
 # Date: 3-28-26
 
 import os
-import
+from dotenv import load_dotenv
+
+load_dotenv(".env_keys")
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 #----------Test data----------
 items = [
