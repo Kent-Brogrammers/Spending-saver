@@ -60,7 +60,7 @@ def loginAccount():
     # Fetch hashed password from DB
     result = get_connection(
         db="Users",
-        query="SELECT password FROM Users WHERE username = %s",
+        query="SELECT id, password FROM Users WHERE username = %s",
         fetch_one=True,
         params=(username,)
     )
@@ -68,7 +68,8 @@ def loginAccount():
     if not result:
         return jsonify({"error": "User not found"}), 404
 
-    stored_hash = result[0].encode('utf-8')
+    user_id, stored_hash  = result
+    stored_hash = stored_hash.encode('utf-8')
 
     # Verify password
     if not bcrypt.checkpw(password.encode('utf-8'), stored_hash):
@@ -77,6 +78,7 @@ def loginAccount():
     # Generate JWT token
     token = jwt.encode(
         {
+            "user_id": user_id,
             "username": username,
             "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
         },
@@ -84,4 +86,4 @@ def loginAccount():
         algorithm="HS256"
     )
 
-    return jsonify({"message": "Login successful", "token": token})
+    return jsonify({"message": "Login successful", "token": token, 'user_id':user_id})
