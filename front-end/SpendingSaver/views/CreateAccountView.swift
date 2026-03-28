@@ -20,8 +20,9 @@ struct CreateAccountView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color(red: 0.10, green: 0.11, blue: 0.16),
-                    Color(red: 0.20, green: 0.24, blue: 0.32)
+                    Color(red: 0.05, green: 0.07, blue: 0.15),  // deep navy
+                    Color(red: 0.10, green: 0.18, blue: 0.35),  // blue
+                    Color(red: 0.12, green: 0.35, blue: 0.40)   // teal hint
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
