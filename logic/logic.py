@@ -16,10 +16,13 @@ items = [
 #----------Waste Claculator----------
 def waste_calculator(items):
     waste = 0
+    total = 0
     for item in items:
+        total += item["price"]
         if item["essential"] is False:
             waste += item["price"]
-    return waste
+        
+    return waste, total
 
 #----------Projections----------
 
@@ -31,6 +34,7 @@ def waste_calculator(items):
 #----------Testing----------
 
 if __name__ == "__main__":
-    waste = waste_calculator(items)
+    waste, total = waste_calculator(items)
     print(waste)
+    print(total)
     
