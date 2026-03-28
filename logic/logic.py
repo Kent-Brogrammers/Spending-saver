@@ -15,28 +15,40 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 USE_GEMINI = True
-DEBUG_GEMINI = False
+DEBUG_GEMINI = True
 
 
 #----------Test data----------
 items = [
-    {"name": "Chips" ,"price": 5.99},
-    {"name": "Pizza(10in)" ,"price": 11.99},
-    {"name": "Chicken" ,"price": 11.43}
+    {"name": "Starbucks Latte", "price": 6.25},
+    {"name": "Groceries", "price": 54.30},
+    {"name": "Uber Ride", "price": 18.50},
+    {"name": "Netflix Subscription", "price": 15.99},
+    {"name": "Chicken Breast", "price": 12.40},
+    {"name": "Gym Membership", "price": 30.00},
+    {"name": "DoorDash Order", "price": 22.75},
+    {"name": "Gas", "price": 40.00},
+    {"name": "Protein Powder", "price": 35.99},
+    {"name": "Concert Ticket", "price": 120.00},
+    {"name": "Water Bottle", "price": 2.00},
+    {"name": "New Shoes", "price": 85.00}
 ]
 
 
 
 #----------Waste Claculator----------
 def waste_calculator(items):
-    waste = 0
-    total = 0
+    waste = 0.0
+    total = 0.0
+    waste_percentage = 0.0
     for item in items:
         total += item["price"]
         if item["essential"] is False:
             waste += item["price"]
+
+    waste_percentage = round((waste / total) * 100, 2) if total > 0 else 0
         
-    return total, waste
+    return total, waste, waste_percentage
 
 #----------Projections----------
 
@@ -77,7 +89,7 @@ You spent ${total:.2f} total, with ${waste:.2f} on non-essential items.
 
 At this rate, that's ${yearly:.2f} per year.
 
-That is equal to:
+That could be equal to:
 {yearly / 1500:.1f} vacations
 {yearly / 1200:.1f} laptops
 
@@ -119,6 +131,9 @@ No explanation. No markdown. No extra text.
     if not USE_GEMINI:
         result_map = {name.lower(): False for name in names}
 
+    elif not uncached_names:
+        result_map = cached_result_map.copy()
+
     else:
         try:
             response = client.models.generate_content(
@@ -149,7 +164,7 @@ No explanation. No markdown. No extra text.
 
         except Exception as e:
             print("Gemini Error:", e)
-            result_map = {name.lower(): False for name in names}
+            result_map.update(cached_result_map)
 
     classified_items = []
 
@@ -173,8 +188,16 @@ No explanation. No markdown. No extra text.
 #----------Analyze spending----------
 
 def analyze_spending(items, this_week, last_week):
+    if not items:
+        return {
+            "total": 0,
+            "waste": 0,
+            "projections": projections(0),
+            "trend": 0,
+            "insight": "No spending data available."
+        }
     classified = classify_items(items)
-    total, waste = waste_calculator(classified)
+    total, waste, waste_percentage = waste_calculator(classified)
     proj =  projections(waste)
     trend = calculate_trends(this_week, last_week)
     insight = generate_insight(total, waste, proj, trend)
@@ -184,6 +207,7 @@ def analyze_spending(items, this_week, last_week):
         "waste": round(waste, 2),
         "projections": proj,
         "trend": round(trend, 2),
+        "waste_percentage": waste_percentage,
         "insight": insight
     }
 
@@ -196,11 +220,12 @@ if __name__ == "__main__":
     print(f"Total: ${stats['total']}")
     print(f"Waste: ${stats['waste']}")
     print(f"Trend: {stats['trend']}%")
+    print(f"Waste percentage: {stats['waste_percentage']}%")
     print(stats["projections"])
     print("\nInsight:\n")
     print(stats["insight"])
 
     # Backend output
-    print("\n=== Backend Payload ===")
+    print("\n=== API Response ===")
     print(json.dumps(stats, indent=2))
     
