@@ -1,6 +1,12 @@
 from flask import Flask
+import snowflake.connector
+
+load_dotenv()
 
 app = Flask(__name__)
+
+def getConnection():
+    
 
 @app.route('/')
 def main():
