@@ -17,10 +17,11 @@ def loginHome():
 @loginPage.route('/create_account', methods=['POST'])
 def createAccount():
     data = request.json
+    full_name = data.get("full_name")
     username = data.get("username")
     password = data.get("password")
 
-    if not username or not password:
+    if not username or not password or not full_name:
         return jsonify({"error": "Username and password required"}), 400
 
     # Check if user exists
@@ -40,8 +41,8 @@ def createAccount():
     # Insert new user
     get_connection(
         db="Users",
-        query="INSERT INTO Users (username, password) VALUES (%s, %s)",
-        params=(username, hashed_password)
+        query="INSERT INTO Users (full_name, username, password) VALUES (%s, %s, %s)",
+        params=(full_name, username, hashed_password)
     )
 
     return jsonify({"message": "User registered successfully"}), 201
