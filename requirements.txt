@@ -5,3 +5,4 @@ snowflake-connector-python
 python-dotenv
 bcrypt
 flask_cors
+google-genai
