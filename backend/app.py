@@ -2,7 +2,7 @@ import os
 from flask import Flask, jsonify, Blueprint
 import snowflake.connector
 from dotenv import load_dotenv
-
+from flask_cors import CORS
 from db_conn.dbHelper import get_connection
 from routes.login import loginPage
 
@@ -10,6 +10,7 @@ from routes.login import loginPage
 load_dotenv(dotenv_path="../.env")
 
 app = Flask(__name__)
+CORS(app)
 app.register_blueprint(loginPage)
 
 #Snowflake Setup
