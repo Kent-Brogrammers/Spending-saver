@@ -12,6 +12,9 @@ items = [
 
 #----------Gemini Classifier----------
 
+def classify_items():
+    classified_items = []
+
 
 #----------Waste Claculator----------
 def waste_calculator(items):
@@ -64,10 +67,27 @@ def generate_insight(total, waste, proj, trend):
     """
     return insight.strip()
 
+#----------Analyze spending----------
+
+def analyze_spending(items, this_week, last_week):
+    total, waste = waste_calculator(items)
+    proj =  projections(waste)
+    trend = calculate_trends(this_week, last_week)
+    insight = generate_insight(total, waste, proj, trend)
+
+    return {
+        "total": total,
+        "waste": waste,
+        "projections": proj,
+        "trends": trend,
+        "insight": insight
+    }
+
 
 #----------Testing----------
 
 if __name__ == "__main__":
+    """
     total, waste = waste_calculator(items)
     proj =  projections(waste)
     trend = calculate_trends(120, 353)
@@ -77,4 +97,8 @@ if __name__ == "__main__":
     print(proj)
     print(trend)
     print("\n", insight)
+    """
+
+    stats = analyze_spending(items, 120, 98)
+    print(stats)
     
