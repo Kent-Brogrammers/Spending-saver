@@ -8,9 +8,11 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var isLoggedIn = false
     @State private var itemName = ""
     @State private var itemPrice = ""
     @State private var items: [Item] = []
+    
     
     struct Item: Identifiable {
         let id = UUID()
@@ -19,26 +21,10 @@ struct ContentView: View {
     }
     
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.16, green: 0.18, blue: 0.22),
-                    Color(red: 0.33, green: 0.36, blue: 0.40),
-                    Color(red: 0.80, green: 0.78, blue: 0.74)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 20) {
-                heroCard
-                inputCard
-                itemsCard
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(20)
+        if isLoggedIn {
+            mainAppView
+        } else {
+            LoginView(isLoggedIn: $isLoggedIn)
         }
     }
 }
@@ -65,6 +51,30 @@ extension ContentView {
             .stroke(.white.opacity(0.08), lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    }
+    
+    var mainAppView: some View{
+        ZStack {
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.16, green: 0.18, blue: 0.22),
+                            Color(red: 0.33, green: 0.36, blue: 0.40),
+                            Color(red: 0.80, green: 0.78, blue: 0.74)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .ignoresSafeArea()
+
+                    VStack(spacing: 20) {
+                        heroCard
+                        inputCard
+                        itemsCard
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(20)
+                }
     }
     
     var inputCard: some View {
