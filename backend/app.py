@@ -1,16 +1,12 @@
 from flask import Flask
 import snowflake.connector
 
+load_dotenv()
+
 app = Flask(__name__)
 
-SNOWFLAKE_CONFIG = {
-    'user': 'YOUR_USERNAME',         # your default user
-    'password': 'YOUR_PASSWORD',     # your Snowflake password
-    'account': 'tpilzjq',            # from the URL
-    'warehouse': 'MY_WAREHOUSE',     # your warehouse
-    'database': 'SPENDING_SAVER_DB', # from URL
-    'schema': 'PUBLIC'               # default schema
-}
+def getConnection():
+    
 
 @app.route('/')
 def main():
