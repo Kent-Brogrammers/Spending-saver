@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from db_conn.dbHelper import get_connection
 import os
 from token_validator.tv import token_required
-
+from logic.logic import *
 inputsPage = Blueprint("inputsPage", __name__, url_prefix="/inputs")
 
 SECRET_KEY = os.getenv("SECRET_KEY")  # for JWT
@@ -12,7 +12,7 @@ def inputs():
     print('a')
     return
 
-@inputsPage.route('/insertzFood')
+@inputsPage.route('/insertFood')
 @token_required
 def insertOrders():
     data = request.json
@@ -39,4 +39,11 @@ def removePref():
 def analyze():
     data = request.json
     user_id = request.user_id
+    
+    print('items_db', f'SELECT * FROM items_db WHERE user_id={user_id}', False)
+
+    items = get_connection('items_db', f'SELECT * FROM itesm_db WHERE user_id={user_id}', False)
+
+
+
     return
