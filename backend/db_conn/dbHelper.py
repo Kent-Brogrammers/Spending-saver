@@ -15,7 +15,7 @@ def get_connection(db, query=None, fetch_one=False, params=None):
     if query:
         cur = conn.cursor()
         if params:
-            cur.execut(query, params)
+            cur.execute(query, params)
         else:
             cur.execute(query)
         result = cur.fetchone() if fetch_one else cur.fetchall()
