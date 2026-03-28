@@ -2,6 +2,9 @@
 # Programmer: Nicholas Vuletich
 # Date: 3-28-26
 
+import os
+import
+
 #----------Test data----------
 items = [
     {"name": "Chips" ,"price": 5.99, "essential": False},
