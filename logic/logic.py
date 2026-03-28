@@ -19,9 +19,9 @@ USE_GEMINI = True
 
 #----------Test data----------
 items = [
-    {"name": "Chips" ,"price": 5.99, "essential": False},
-    {"name": "Pizza(10in)" ,"price": 11.99, "essential": False},
-    {"name": "Chicken" ,"price": 11.43, "essential": True}
+    {"name": "Chips" ,"price": 5.99},
+    {"name": "Pizza(10in)" ,"price": 11.99},
+    {"name": "Chicken" ,"price": 11.43}
 ]
 
 
@@ -65,6 +65,12 @@ def calculate_trends(this_week, last_week):
 
 def generate_insight(total, waste, proj, trend):
     yearly = proj["yearly"]
+
+    if trend > 0:
+        trend_text = f"{trend:.1f}% more than last week"
+    else:
+        trend_text = f"{abs(trend):.1f}% less than last week"
+
     insight = f"""
 You spent ${total:.2f} total, with ${waste:.2f} on non-essential items.
 
@@ -74,7 +80,7 @@ That is equal to:
 {yearly / 1500:.1f} vacations
 {yearly / 1200:.1f} laptops
 
-Your spending is {trend:.1f}% compared to last week.
+Your spending is {trend_text}.
 """
     return insight.strip()
 
@@ -109,6 +115,8 @@ No explanation. No markdown. No extra text.
                 contents=prompt
             )
             text = response.text.strip()
+
+            print("Gemini raw response:", text)
 
             if not text:
                 raise ValueError("Empty response from Gemini")
@@ -167,8 +175,8 @@ def analyze_spending(items, this_week, last_week):
 #----------Testing----------
 
 if __name__ == "__main__":
-    
-    total, waste = waste_calculator(items)
+    classified = classify_items(items)
+    total, waste = waste_calculator(classified)
     proj =  projections(waste)
     trend = calculate_trends(120, 353)
     insight = generate_insight(total, waste, proj, trend)
