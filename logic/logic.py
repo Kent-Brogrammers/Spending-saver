@@ -10,11 +10,6 @@ items = [
 ]
 
 
-#----------Gemini Classifier----------
-
-def classify_items():
-    classified_items = []
-
 
 #----------Waste Claculator----------
 def waste_calculator(items):
@@ -67,10 +62,35 @@ def generate_insight(total, waste, proj, trend):
     """
     return insight.strip()
 
+#----------Gemini Classifier----------
+
+def classify_items(items):
+    classified_items = []
+
+    for item in items:
+        name = item["name"]
+
+        # Temporary: replace with gemeni call
+        if name.lower() in ["chicken", "rice", "eggs"]:
+            essential = True
+        else:
+            essential = False
+
+        classified_items.append({
+            "name": name,
+            "price": item["price"],
+            "essential": essential
+        })
+
+    return classified_items
+
+
+
 #----------Analyze spending----------
 
 def analyze_spending(items, this_week, last_week):
-    total, waste = waste_calculator(items)
+    classified = classify_items(items)
+    total, waste = waste_calculator(classified)
     proj =  projections(waste)
     trend = calculate_trends(this_week, last_week)
     insight = generate_insight(total, waste, proj, trend)
@@ -82,7 +102,6 @@ def analyze_spending(items, this_week, last_week):
         "trends": trend,
         "insight": insight
     }
-
 
 #----------Testing----------
 
@@ -100,5 +119,8 @@ if __name__ == "__main__":
     """
 
     stats = analyze_spending(items, 120, 98)
+    classified = classify_items(items)
     print(stats)
+    print()
+    print(classified)
     
