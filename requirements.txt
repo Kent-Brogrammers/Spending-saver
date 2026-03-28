@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 auth0-server-python>=1.0.0b7
 flask[async]>=2.0.0
 python-dotenv>=1.0.0
-=======
-Flask==2.3.2
->>>>>>> Backend
+google-genai

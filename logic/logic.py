@@ -3,11 +3,19 @@
 # Date: 3-28-26
 
 import os
+import json
 from dotenv import load_dotenv
+from google import genai
 
+classification_cache = {}
+
+#----------Configuration----------
 load_dotenv(".env_keys")
-
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=GEMINI_API_KEY)
+
+USE_GEMINI = True
+
 
 #----------Test data----------
 items = [
@@ -58,40 +66,86 @@ def calculate_trends(this_week, last_week):
 def generate_insight(total, waste, proj, trend):
     yearly = proj["yearly"]
     insight = f"""
-    You spent ${total:.2f} total, with ${waste:.2f} on non-essential items.
-    At this rate, that's ${yearly:.2f} per year.
+You spent ${total:.2f} total, with ${waste:.2f} on non-essential items.
 
-    That is equal to:
-    ~{yearly / 1500:.1f} Vacations
-    ~{yearly / 1200:.1f} Laptops
+At this rate, that's ${yearly:.2f} per year.
 
-    Your spending is {trend:.1f}% compared to last week.
-    """
+That is equal to:
+{yearly / 1500:.1f} vacations
+{yearly / 1200:.1f} laptops
+
+Your spending is {trend:.1f}% compared to last week.
+"""
     return insight.strip()
 
 #----------Gemini Classifier----------
 
 def classify_items(items):
+    names = [item.get("name", "") for item in items]
+
+    prompt = f"""
+Classify each item as essential or non-essential.
+
+Items:
+{names}
+
+Return STRICT JSON in this format:
+[
+  {{"name": "<item>", "essential": true/false}}
+]
+
+Use the SAME item names provided.
+
+No explanation. No markdown. No extra text.
+"""
+
+    if not USE_GEMINI:
+        result_map = {name.lower(): False for name in names}
+
+    else:
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+            text = response.text.strip()
+
+            if not text:
+                raise ValueError("Empty response from Gemini")
+
+            try:
+                data = json.loads(text)
+            except:
+                print("Bad JSON:", text)
+                raise
+
+            result_map = {
+                d["name"].lower(): d["essential"]
+                for d in data
+            }
+
+        except Exception as e:
+            print("Gemini Error:", e)
+            result_map = {name.lower(): False for name in names}
+
     classified_items = []
 
     for item in items:
-        name = item["name"]
+        name = item.get("name", "")
+        price = item.get("price", 0)
 
-        # Temporary: replace with gemeni call
-        if name.lower() in ["chicken", "rice", "eggs"]:
-            essential = True
-        else:
-            essential = False
+        essential = result_map.get(name.lower(), False)
+
+        
+        classification_cache[name.lower()] = essential
 
         classified_items.append({
             "name": name,
-            "price": item["price"],
+            "price": price,
             "essential": essential
         })
 
-    return classified_items
-
-
+    return classified_items   
 
 #----------Analyze spending----------
 
@@ -103,17 +157,17 @@ def analyze_spending(items, this_week, last_week):
     insight = generate_insight(total, waste, proj, trend)
 
     return {
-        "total": total,
-        "waste": waste,
+        "total": round(total, 2), 
+        "waste": round(waste, 2),
         "projections": proj,
-        "trends": trend,
+        "trend": round(trend, 2),
         "insight": insight
     }
 
 #----------Testing----------
 
 if __name__ == "__main__":
-    """
+    
     total, waste = waste_calculator(items)
     proj =  projections(waste)
     trend = calculate_trends(120, 353)
@@ -123,7 +177,7 @@ if __name__ == "__main__":
     print(proj)
     print(trend)
     print("\n", insight)
-    """
+    
 
     stats = analyze_spending(items, 120, 98)
     classified = classify_items(items)
