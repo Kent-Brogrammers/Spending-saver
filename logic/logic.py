@@ -22,7 +22,7 @@ def waste_calculator(items):
         if item["essential"] is False:
             waste += item["price"]
         
-    return waste, total
+    return total, waste
 
 #----------Projections----------
 
@@ -42,20 +42,39 @@ def projections(waste):
 #----------Trends----------
 
 def calculate_trends(this_week, last_week):
+    if last_week == 0:
+        return 0
+    
     return ((this_week-last_week)/last_week) * 100
     
 
-
 #----------Insight generation----------
+
+def generate_insight(total, waste, proj, trend):
+    yearly = proj["yearly"]
+    insight = f"""
+    You spent ${total:.2f} total, with ${waste:.2f} on non-essential items.
+    At this rate, that's ${yearly:.2f} per year.
+
+    That is equal to:
+    ~{yearly / 1500:.1f} Vacations
+    ~{yearly / 1200:.1f} Laptops
+
+    Your spending is {trend:.1f}% compared to last week.
+    """
+    return insight.strip()
 
 
 #----------Testing----------
 
 if __name__ == "__main__":
-    waste, total = waste_calculator(items)
+    total, waste = waste_calculator(items)
     proj =  projections(waste)
-    trend = calculate_trends()
+    trend = calculate_trends(120, 353)
+    insight = generate_insight(total, waste, proj, trend)
     print("Waste: ",waste)
     print("Total: ", total)
     print(proj)
+    print(trend)
+    print("\n", insight)
     
