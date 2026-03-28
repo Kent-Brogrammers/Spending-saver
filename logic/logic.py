@@ -15,6 +15,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 USE_GEMINI = True
+DEBUG_GEMINI = False
 
 
 #----------Test data----------
@@ -89,11 +90,21 @@ Your spending is {trend_text}.
 def classify_items(items):
     names = [item.get("name", "") for item in items]
 
+    cached_result_map = {}
+    uncached_names = []
+
+    for name in names:
+        key = name.lower()
+        if key in classification_cache:
+            cached_result_map[key] = classification_cache[key]
+        else:
+            uncached_names.append(name)
+
     prompt = f"""
 Classify each item as essential or non-essential.
 
 Items:
-{names}
+{uncached_names}
 
 Return STRICT JSON in this format:
 [
@@ -116,7 +127,9 @@ No explanation. No markdown. No extra text.
             )
             text = response.text.strip()
 
-            print("Gemini raw response:", text)
+
+            if DEBUG_GEMINI:
+                print("Gemini raw response:", text)
 
             if not text:
                 raise ValueError("Empty response from Gemini")
@@ -131,6 +144,8 @@ No explanation. No markdown. No extra text.
                 d["name"].lower(): d["essential"]
                 for d in data
             }
+
+            result_map.update(cached_result_map)
 
         except Exception as e:
             print("Gemini Error:", e)
@@ -175,21 +190,17 @@ def analyze_spending(items, this_week, last_week):
 #----------Testing----------
 
 if __name__ == "__main__":
-    classified = classify_items(items)
-    total, waste = waste_calculator(classified)
-    proj =  projections(waste)
-    trend = calculate_trends(120, 353)
-    insight = generate_insight(total, waste, proj, trend)
-    print("Waste: ",waste)
-    print("Total: ", total)
-    print(proj)
-    print(trend)
-    print("\n", insight)
-    
-
     stats = analyze_spending(items, 120, 98)
-    classified = classify_items(items)
-    print(stats)
-    print()
-    print(classified)
+
+    print("\n=== Spending Analysis ===")
+    print(f"Total: ${stats['total']}")
+    print(f"Waste: ${stats['waste']}")
+    print(f"Trend: {stats['trend']}%")
+    print(stats["projections"])
+    print("\nInsight:\n")
+    print(stats["insight"])
+
+    # Backend output
+    print("\n=== Backend Payload ===")
+    print(json.dumps(stats, indent=2))
     
