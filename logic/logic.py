@@ -26,7 +26,25 @@ def waste_calculator(items):
 
 #----------Projections----------
 
+def projections(waste):
+    daily = waste
+    weekly = daily * 7
+    monthly = weekly * 4
+    yearly = weekly * 52
+
+    return {
+        "daily": daily,
+        "weekly": weekly,
+        "monthly": monthly,
+        "yearly": yearly
+    }
+
 #----------Trends----------
+
+def calculate_trends(this_week, last_week):
+    return ((this_week-last_week)/last_week) * 100
+    
+
 
 #----------Insight generation----------
 
@@ -35,6 +53,9 @@ def waste_calculator(items):
 
 if __name__ == "__main__":
     waste, total = waste_calculator(items)
-    print(waste)
-    print(total)
+    proj =  projections(waste)
+    trend = calculate_trends()
+    print("Waste: ",waste)
+    print("Total: ", total)
+    print(proj)
     
