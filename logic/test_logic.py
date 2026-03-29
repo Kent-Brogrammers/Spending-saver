@@ -26,16 +26,14 @@ def generate_random_test_data():
             "frequency": random.choice(frequencies)
         }
 
-        # 🎯 30% chance user manually sets essential
         if random.random() < 0.3:
             item["essential"] = random.choice([True, False])
 
         items.append(item)
 
-    # weekly spending (simulate trend)
+
     last_week = round(random.uniform(100, 600), 2)
 
-    # this week varies around last week
     this_week = round(last_week * random.uniform(0.5, 1.8), 2)
 
     preferences = [
