@@ -115,6 +115,30 @@ final class AuthService {
         }
     }
 
+    func updatePreference(token: String, preference: String) async throws -> MessageResponse {
+        guard let url = URL(string: "\(baseURL)/inputs/changePref") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONEncoder().encode(PreferenceRequest(preference: preference))
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        if (200...299).contains(httpResponse.statusCode) {
+            return (try? JSONDecoder().decode(MessageResponse.self, from: data)) ?? MessageResponse(message: "Preference saved")
+        } else {
+            throw apiError(from: data, statusCode: httpResponse.statusCode, fallback: "Failed to save preference")
+        }
+    }
+
     private func decodeExpenseList(from data: Data) throws -> [ExpenseDTO] {
         let decoder = JSONDecoder()
 

@@ -13,6 +13,8 @@ struct ExpenseItem: Identifiable {
     let name: String
     let amount: Double
     let category: String
+    let frequency: String
+    let isEssential: Bool
     let createdAt: Date?
 }
 
@@ -44,7 +46,7 @@ class ExpenseStore: ObservableObject {
         }
     }
 
-    func addExpense(name: String, amount: Double, category: String, frequency: String) async throws {
+    func addExpense(name: String, amount: Double, category: String, frequency: String, isEssential: Bool) async throws {
         guard let token = UserDefaults.standard.string(forKey: "authToken"), !token.isEmpty else {
             throw NSError(
                 domain: "",
@@ -63,8 +65,19 @@ class ExpenseStore: ObservableObject {
             name: dto.food_name ?? dto.name ?? "Unknown Item",
             amount: dto.cost ?? dto.amount ?? 0,
             category: dto.category ?? "Other",
+            frequency: "One Time",
+            isEssential: isEssentialCategory(dto.category),
             createdAt: parseDate(dto.order_datetime ?? dto.timestamp_column ?? dto.timestamp ?? dto.created_at)
         )
+    }
+
+    private static func isEssentialCategory(_ category: String?) -> Bool {
+        switch category {
+        case "Groceries", "Gas":
+            return true
+        default:
+            return false
+        }
     }
 
     private static func parseDate(_ value: String?) -> Date? {
