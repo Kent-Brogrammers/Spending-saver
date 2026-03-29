@@ -10,11 +10,12 @@ from google import genai
 classification_cache = {}
 
 #----------Configuration----------
-load_dotenv(dotenv_path="../.env")
+load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-USE_GEMINI = True
+USE_GEMINI = bool(GEMINI_API_KEY)
 DEBUG_GEMINI = True
 
 
