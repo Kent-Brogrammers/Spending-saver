@@ -13,17 +13,78 @@ struct ExpenseItem: Identifiable {
     let name: String
     let amount: Double
     let category: String
+    let createdAt: Date?
 }
 
+@MainActor
 class ExpenseStore: ObservableObject {
-    @Published var expenses: [ExpenseItem] = [
-        ExpenseItem(name: "Bookstore", amount: 45.89, category: "Shopping"),
-        ExpenseItem(name: "Groceries", amount: 102.50, category: "Groceries"),
-        ExpenseItem(name: "Coffee", amount: 4.75, category: "Coffee")
-    ]
-    
-    func addExpense(name: String, amount: Double, category: String) {
-        let newExpense = ExpenseItem(name: name, amount: amount, category: category)
-        expenses.insert(newExpense, at: 0)
+    @Published var expenses: [ExpenseItem] = []
+    @Published var isLoading = false
+    @Published var errorMessage = ""
+
+    private let authService = AuthService.shared
+
+    func loadExpenses() async {
+        guard let token = UserDefaults.standard.string(forKey: "authToken"), !token.isEmpty else {
+            errorMessage = "Missing auth token."
+            return
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let items = try await authService.fetchItems(token: token)
+            expenses = items.map(Self.mapExpense).sorted { lhs, rhs in
+                (lhs.createdAt ?? .distantPast) > (rhs.createdAt ?? .distantPast)
+            }
+            errorMessage = ""
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func addExpense(name: String, amount: Double, category: String) async throws {
+        guard let token = UserDefaults.standard.string(forKey: "authToken"), !token.isEmpty else {
+            throw NSError(
+                domain: "",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Missing auth token."]
+            )
+        }
+
+        let request = InsertFoodRequest(food_name: name, cost: amount, category: category)
+        try await authService.insertFood(token: token, requestBody: request)
+        await loadExpenses()
+    }
+
+    private static func mapExpense(_ dto: ExpenseDTO) -> ExpenseItem {
+        ExpenseItem(
+            name: dto.food_name ?? dto.name ?? "Unknown Item",
+            amount: dto.cost ?? dto.amount ?? 0,
+            category: dto.category ?? "Other",
+            createdAt: parseDate(dto.timestamp_column ?? dto.timestamp ?? dto.created_at)
+        )
+    }
+
+    private static func parseDate(_ value: String?) -> Date? {
+        guard let value, !value.isEmpty else {
+            return nil
+        }
+
+        let isoFormatter = ISO8601DateFormatter()
+        if let date = isoFormatter.date(from: value) {
+            return date
+        }
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        if let date = formatter.date(from: value) {
+            return date
+        }
+
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return formatter.date(from: value)
     }
 }

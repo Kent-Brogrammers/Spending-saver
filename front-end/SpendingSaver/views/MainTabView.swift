@@ -54,6 +54,9 @@ struct MainTabView: View {
             .padding(.top, 20)
             .padding(.bottom, 12)
             .zIndex(0)
+            .task {
+                await expenseStore.loadExpenses()
+            }
             
             if showMenuOverlay {
                 Color.black.opacity(0.35)

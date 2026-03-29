@@ -31,3 +31,20 @@ struct MessageResponse: Codable {
 struct ErrorResponse: Codable {
     let error: String
 }
+
+struct InsertFoodRequest: Codable {
+    let food_name: String
+    let cost: Double
+    let category: String
+}
+
+struct ExpenseDTO: Codable {
+    let food_name: String?
+    let name: String?
+    let cost: Double?
+    let amount: Double?
+    let category: String?
+    let timestamp_column: String?
+    let timestamp: String?
+    let created_at: String?
+}

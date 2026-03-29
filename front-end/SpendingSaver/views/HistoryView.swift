@@ -9,25 +9,21 @@ import SwiftUI
 
 struct HistoryView: View {
     @ObservedObject var expenseStore: ExpenseStore
-    @State private var selectedDateLabel = "March 28, 2026"
-    
-    let groupedHistory: [(date: String, items: [HistoryItem])] = [
-        (
-            date: "March 28, 2026",
-            items: [
-                HistoryItem(name: "Starbucks", category: "Coffee", amount: 7.45),
-                HistoryItem(name: "Target", category: "Shopping", amount: 42.19),
-                HistoryItem(name: "Sheetz", category: "Gas", amount: 28.00)
-            ]
-        ),
-        (
-            date: "March 27, 2026",
-            items: [
-                HistoryItem(name: "Walmart", category: "Groceries", amount: 63.84),
-                HistoryItem(name: "Dunkin", category: "Coffee", amount: 5.75)
-            ]
-        )
-    ]
+    @State private var selectedDateLabel = "All Dates"
+
+    var groupedHistory: [(date: String, items: [ExpenseItem])] {
+        let grouped = Dictionary(grouping: expenseStore.expenses) { expense in
+            historyDateLabel(for: expense.createdAt)
+        }
+
+        return grouped
+            .map { (date: $0.key, items: $0.value) }
+            .sorted { lhs, rhs in
+                let lhsDate = lhs.items.first?.createdAt ?? .distantPast
+                let rhsDate = rhs.items.first?.createdAt ?? .distantPast
+                return lhsDate > rhsDate
+            }
+    }
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -60,23 +56,30 @@ struct HistoryView: View {
                     )
                 }
                 
-                ForEach(groupedHistory, id: \.date) { group in
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(group.date)
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        
-                        ForEach(group.items) { item in
-                            historyRow(item)
+                if groupedHistory.isEmpty {
+                    Text("No expenses yet")
+                        .foregroundColor(.white.opacity(0.7))
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                } else {
+                    ForEach(groupedHistory, id: \.date) { group in
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(group.date)
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            
+                            ForEach(group.items) { item in
+                                historyRow(item)
+                            }
                         }
+                        .padding(20)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        )
                     }
-                    .padding(20)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                    )
                 }
                 
                 Spacer(minLength: 120)
@@ -85,7 +88,7 @@ struct HistoryView: View {
         }
     }
     
-    func historyRow(_ item: HistoryItem) -> some View {
+    func historyRow(_ item: ExpenseItem) -> some View {
         HStack {
             Image(systemName: iconForCategory(item.category))
                 .foregroundColor(.cyan)
@@ -109,6 +112,14 @@ struct HistoryView: View {
         .background(Color.white.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
+
+    func historyDateLabel(for date: Date?) -> String {
+        guard let date else {
+            return "Recent"
+        }
+
+        return date.formatted(date: .long, time: .omitted)
+    }
     
     func iconForCategory(_ category: String) -> String {
         switch category {
@@ -124,13 +135,6 @@ struct HistoryView: View {
             return "dollarsign.circle.fill"
         }
     }
-}
-
-struct HistoryItem: Identifiable {
-    let id = UUID()
-    let name: String
-    let category: String
-    let amount: Double
 }
 
 #Preview {
