@@ -14,6 +14,8 @@ struct AddExpenseView: View {
     @State private var name = ""
     @State private var amount = ""
     @State private var category = "Groceries"
+    @State private var isSaving = false
+    @State private var errorMessage = ""
     
     let categories = ["Groceries", "Gas", "Coffee", "Shopping", "Other"]
     
@@ -63,7 +65,9 @@ struct AddExpenseView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     
                     Button("Add Expense") {
-                        addExpense()
+                        Task {
+                            await addExpense()
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -76,6 +80,13 @@ struct AddExpenseView: View {
                     )
                     .foregroundColor(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .disabled(isSaving)
+                }
+
+                if !errorMessage.isEmpty {
+                    Text(errorMessage)
+                        .font(.footnote)
+                        .foregroundColor(.red.opacity(0.9))
                 }
             }
             .padding(24)
@@ -89,19 +100,23 @@ struct AddExpenseView: View {
             Spacer()
         }
     }
-    func addExpense() {
+    func addExpense() async {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         guard let amountValue = Double(amount) else { return }
-        
-        expenseStore.addExpense(name: name, amount: amountValue, category: category)
-        
-        name = ""
-        amount = ""
-        category = "Groceries"
-        
-        selectedTab = .home
-        
-        
+
+        isSaving = true
+        defer { isSaving = false }
+
+        do {
+            try await expenseStore.addExpense(name: name, amount: amountValue, category: category)
+            errorMessage = ""
+            name = ""
+            amount = ""
+            category = "Groceries"
+            selectedTab = .home
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 

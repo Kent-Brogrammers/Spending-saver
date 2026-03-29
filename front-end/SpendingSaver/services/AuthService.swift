@@ -70,4 +70,83 @@ final class AuthService {
             )
         }
     }
+
+    func fetchItems(token: String) async throws -> [ExpenseDTO] {
+        guard let url = URL(string: "\(baseURL)/defaults/listItems") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        if (200...299).contains(httpResponse.statusCode) {
+            return try decodeExpenseList(from: data)
+        } else {
+            throw apiError(from: data, statusCode: httpResponse.statusCode, fallback: "Failed to fetch items")
+        }
+    }
+
+    func insertFood(token: String, requestBody: InsertFoodRequest) async throws {
+        guard let url = URL(string: "\(baseURL)/inputs/insertFood") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONEncoder().encode(requestBody)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw apiError(from: data, statusCode: httpResponse.statusCode, fallback: "Failed to save expense")
+        }
+    }
+
+    private func decodeExpenseList(from data: Data) throws -> [ExpenseDTO] {
+        let decoder = JSONDecoder()
+
+        if let items = try? decoder.decode([ExpenseDTO].self, from: data) {
+            return items
+        }
+
+        struct WrappedItems: Codable {
+            let items: [ExpenseDTO]
+        }
+
+        if let wrapped = try? decoder.decode(WrappedItems.self, from: data) {
+            return wrapped.items
+        }
+
+        throw NSError(
+            domain: "",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "Unexpected listItems response format"]
+        )
+    }
+
+    private func apiError(from data: Data, statusCode: Int, fallback: String) -> NSError {
+        let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
+        let messageResponse = try? JSONDecoder().decode(MessageResponse.self, from: data)
+
+        return NSError(
+            domain: "",
+            code: statusCode,
+            userInfo: [
+                NSLocalizedDescriptionKey: errorResponse?.error ?? messageResponse?.message ?? fallback
+            ]
+        )
+    }
 }
