@@ -10,29 +10,30 @@ import SwiftUI
 struct TrendsView: View {
     @ObservedObject var expenseStore: ExpenseStore
 
-    private var dailyAverage: Double {
-        guard let earliestDate = expenseStore.expenses.compactMap(\.createdAt).min() else {
-            return expenseStore.expenses.reduce(0) { $0 + $1.amount }
-        }
-
-        let days = max(Calendar.current.dateComponents([.day], from: earliestDate, to: Date()).day ?? 0, 1)
-        return expenseStore.expenses.reduce(0) { $0 + $1.amount } / Double(days)
-    }
-
-    private var monthlyProjection: Double {
-        dailyAverage * 30
-    }
-
-    private var yearlyProjection: Double {
-        dailyAverage * 365
-    }
+    
 
     private var insightCards: [(String, String, String)] {
         [
-            ("Monthly Outlook", "If you keep spending like this, you could spend \(monthlyProjection.formatted(.currency(code: "USD"))) in a month.", "calendar"),
-            ("Rent Perspective", "That pace could cover rent about \(ratioText(total: yearlyProjection, divisor: 1800)) times a year.", "house.fill"),
-            ("MacBook Comparison", "That is roughly \(ratioText(total: yearlyProjection, divisor: 1599)) MacBooks over a year.", "laptopcomputer"),
-            ("Vacation Fund", "That could fund about \(ratioText(total: yearlyProjection, divisor: 2500)) vacations.", "airplane")
+            (
+                "Monthly Outlook",
+                "If you keep spending like this, you could spend \(expenseStore.projections.monthly.formatted(.currency(code: "USD"))) in a month.",
+                "calendar"
+            ),
+            (
+                "Rent Perspective",
+                "That pace could cover rent about \(ratioText(total: expenseStore.projections.yearly, divisor: 1800)) times a year.",
+                "house.fill"
+            ),
+            (
+                "MacBook Comparison",
+                "That is roughly \(ratioText(total: expenseStore.projections.yearly, divisor: 1599)) MacBooks over a year.",
+                "laptopcomputer"
+            ),
+            (
+                "Vacation Fund",
+                "That could fund about \(ratioText(total: expenseStore.projections.yearly, divisor: 2500)) vacations.",
+                "airplane"
+            )
         ]
     }
 
@@ -50,7 +51,7 @@ struct TrendsView: View {
                         .font(.headline)
                         .foregroundColor(.white)
 
-                    Text(yearlyProjection, format: .currency(code: "USD"))
+                    Text(expenseStore.projections.yearly, format: .currency(code: "USD"))
                         .font(.system(size: 34, weight: .bold))
                         .foregroundColor(.white)
 

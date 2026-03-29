@@ -70,3 +70,21 @@ struct ExpenseDTO: Codable {
     let timestamp: String?
     let created_at: String?
 }
+
+struct AnalysisResponse: Codable {
+    let total: Double
+    let waste: Double
+    let projections: Projections
+    let trend: Double
+    let wastePercentage: Double
+    let insight: String
+
+    enum CodingKeys: String, CodingKey {
+        case total
+        case waste
+        case projections
+        case trend
+        case wastePercentage = "waste_percentage"
+        case insight
+    }
+}

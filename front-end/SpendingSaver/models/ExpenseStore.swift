@@ -18,11 +18,26 @@ struct ExpenseItem: Identifiable {
     let createdAt: Date?
 }
 
+struct Projections: Codable {
+    let daily: Double
+    let weekly: Double
+    let monthly: Double
+    let yearly: Double
+
+    init(daily: Double = 0, weekly: Double = 0, monthly: Double = 0, yearly: Double = 0) {
+        self.daily = daily
+        self.weekly = weekly
+        self.monthly = monthly
+        self.yearly = yearly
+    }
+}
+
 @MainActor
 class ExpenseStore: ObservableObject {
     @Published var expenses: [ExpenseItem] = []
     @Published var isLoading = false
     @Published var errorMessage = ""
+    @Published var projections = Projections()
 
     private let authService = AuthService.shared
 
@@ -40,6 +55,24 @@ class ExpenseStore: ObservableObject {
             expenses = items.map(Self.mapExpense).sorted { lhs, rhs in
                 (lhs.createdAt ?? .distantPast) > (rhs.createdAt ?? .distantPast)
             }
+            
+            let requestData: [String: Any] = [
+                "items": expenses.map {
+                    [
+                        "name": $0.name,
+                        "price": $0.amount,
+                        "frequency": $0.frequency.lowercased()
+                    ]
+                },
+                "this_week": 200,
+                "last_week": 150,
+                "preferences_text": "I prioritize health, groceries, and fitness."
+            ]
+
+            let analysis = try await authService.analyzeSpending(token: token, data: requestData)
+
+            self.projections = analysis.projections
+            
             errorMessage = ""
         } catch {
             errorMessage = error.localizedDescription

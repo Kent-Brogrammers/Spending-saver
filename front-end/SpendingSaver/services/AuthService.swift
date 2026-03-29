@@ -173,4 +173,31 @@ final class AuthService {
             ]
         )
     }
+    
+    func analyzeSpending(token: String, data: [String: Any]) async throws -> AnalysisResponse {
+        guard let url = URL(string: "\(baseURL)/analyze") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: data)
+
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        if (200...299).contains(httpResponse.statusCode) {
+            return try JSONDecoder().decode(AnalysisResponse.self, from: responseData)
+        } else {
+            throw NSError(domain: "", code: httpResponse.statusCode, userInfo: [
+                NSLocalizedDescriptionKey: "Analyze request failed"
+            ])
+        }
+    }
 }
