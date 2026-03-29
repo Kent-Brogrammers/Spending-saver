@@ -3,7 +3,7 @@
 # Date: 3-28-26
 
 import json
-from snowflake_ai import process_request
+from logic import process_request
 
 #----------Test data----------
 request_data = {
