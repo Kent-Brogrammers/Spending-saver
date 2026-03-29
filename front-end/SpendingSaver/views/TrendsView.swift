@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct TrendsView: View {
-    @ObservedObject var expenseStore: ExpenseStore
+    @EnvironmentObject var expenseStore: ExpenseStore
 
     
 
@@ -105,5 +105,7 @@ struct TrendsView: View {
 }
 
 #Preview {
-    TrendsView(expenseStore: ExpenseStore())
+    TrendsView()
+        .environmentObject(ExpenseStore())
 }
+

@@ -25,26 +25,26 @@ struct MainTabView: View {
                     if let selectedMenuPage {
                         switch selectedMenuPage {
                         case .history:
-                            HistoryView(expenseStore: expenseStore)
+                            HistoryView()
                         case .health:
-                            HealthView(expenseStore: expenseStore)
+                            HealthView()
                         case .preferences:
                             PreferencesView()
                         case .trends:
-                            TrendsView(expenseStore: expenseStore)
+                            TrendsView()
                         case .settings:
                             SettingsView()
                         }
                     } else {
                         switch selectedTab {
                         case .home:
-                            DashboardView(expenseStore: expenseStore)
+                            DashboardView()
                         case .menuPlaceholder:
-                            DashboardView(expenseStore: expenseStore)
+                            DashboardView()
                         case .add:
-                            AddExpenseView(expenseStore: expenseStore, selectedTab: $selectedTab)
+                            AddExpenseView(selectedTab: $selectedTab)
                         case .analytics:
-                            AnalyticsView(expenseStore: expenseStore)
+                            AnalyticsView()
                         case .profile:
                             ProfileView(isLoggedIn: $isLoggedIn)
                         }

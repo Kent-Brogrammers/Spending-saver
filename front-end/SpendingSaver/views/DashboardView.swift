@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct DashboardView: View {
-    @ObservedObject var expenseStore: ExpenseStore
+    @EnvironmentObject var expenseStore: ExpenseStore
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -97,5 +97,6 @@ struct DashboardView: View {
 }
 
 #Preview {
-    DashboardView(expenseStore: ExpenseStore())
+    DashboardView()
+        .environmentObject(ExpenseStore())
 }

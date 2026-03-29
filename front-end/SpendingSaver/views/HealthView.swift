@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct HealthView: View {
-    @ObservedObject var expenseStore: ExpenseStore
+    @EnvironmentObject var expenseStore: ExpenseStore
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -127,5 +127,6 @@ struct HealthView: View {
 }
 
 #Preview {
-    HealthView(expenseStore: ExpenseStore())
+    HealthView()
+        .environmentObject(ExpenseStore())
 }

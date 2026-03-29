@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct AddExpenseView: View {
-    @ObservedObject var expenseStore: ExpenseStore
+    @EnvironmentObject var expenseStore: ExpenseStore
     @Binding var selectedTab: AppTab
     
     @State private var name = ""
@@ -157,5 +157,6 @@ struct AddExpenseView: View {
 }
 
 #Preview {
-    AddExpenseView(expenseStore: ExpenseStore(), selectedTab: .constant(.add))
+    AddExpenseView(selectedTab: .constant(.add))
+        .environmentObject(ExpenseStore())
 }

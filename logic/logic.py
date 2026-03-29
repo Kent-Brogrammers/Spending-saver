@@ -47,7 +47,7 @@ def waste_calculator(items):
         total += daily_value
 
         if not item.get("essential", False):
-            waste += price
+            waste += daily_value
 
     waste_percentage = round((waste / total) * 100, 2) if total > 0 else 0
         
@@ -55,8 +55,8 @@ def waste_calculator(items):
 
 #----------Projections----------
 
-def projections(waste):
-    daily = waste
+def projections(total):
+    daily = total
     weekly = daily * 7
     monthly = weekly * 4
     yearly = weekly * 52
@@ -290,6 +290,12 @@ Output JSON ONLY.
 #----------Analyze spending----------
 
 def analyze_spending(items, this_week, last_week, preferences_text=""):
+
+    print("\n=== ITEMS RECEIVED ===")
+    for item in items:
+        print(item)
+    print("=====================\n")
+
     if not items:
         return {
             "total": 0,
@@ -300,7 +306,7 @@ def analyze_spending(items, this_week, last_week, preferences_text=""):
         }
     classified = classify_items(items, preferences_text)
     total, waste, waste_percentage = waste_calculator(classified)
-    proj =  projections(waste)
+    proj =  projections(total)
     trend = calculate_trends(this_week, last_week)
     insight = generate_insight(total, waste, proj, trend)
 

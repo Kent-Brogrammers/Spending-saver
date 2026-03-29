@@ -11,7 +11,7 @@ final class AuthService {
     static let shared = AuthService()
     private init() {}
 
-    private let baseURL = "http://127.0.0.1:5000"
+    let baseURL = "http://127.0.0.1:5000"
 
     func login(username: String, password: String) async throws -> LoginResponse {
         guard let url = URL(string: "\(baseURL)/login/login") else {
@@ -175,7 +175,7 @@ final class AuthService {
     }
     
     func analyzeSpending(token: String, data: [String: Any]) async throws -> AnalysisResponse {
-        guard let url = URL(string: "\(baseURL)/analyze") else {
+        guard let url = URL(string: "\(baseURL)/inputs/analyze") else {
             throw URLError(.badURL)
         }
 

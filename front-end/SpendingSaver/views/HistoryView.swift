@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct HistoryView: View {
-    @ObservedObject var expenseStore: ExpenseStore
+    @EnvironmentObject var expenseStore: ExpenseStore
     @State private var selectedDateLabel = "All Dates"
 
     var groupedHistory: [(date: String, items: [ExpenseItem])] {
@@ -138,5 +138,6 @@ struct HistoryView: View {
 }
 
 #Preview {
-    HistoryView(expenseStore: ExpenseStore())
+    HistoryView()
+        .environmentObject(ExpenseStore())
 }

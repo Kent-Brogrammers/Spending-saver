@@ -55,25 +55,10 @@ class ExpenseStore: ObservableObject {
             expenses = items.map(Self.mapExpense).sorted { lhs, rhs in
                 (lhs.createdAt ?? .distantPast) > (rhs.createdAt ?? .distantPast)
             }
-            
-            let requestData: [String: Any] = [
-                "items": expenses.map {
-                    [
-                        "name": $0.name,
-                        "price": $0.amount,
-                        "frequency": $0.frequency.lowercased()
-                    ]
-                },
-                "this_week": 200,
-                "last_week": 150,
-                "preferences_text": "I prioritize health, groceries, and fitness."
-            ]
+            await fetchAnalysis()
 
-            let analysis = try await authService.analyzeSpending(token: token, data: requestData)
-
-            self.projections = analysis.projections
-            
             errorMessage = ""
+
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -133,4 +118,32 @@ class ExpenseStore: ObservableObject {
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
         return formatter.date(from: value)
     }
+    
+    func fetchAnalysis() async {
+        guard let token = UserDefaults.standard.string(forKey: "authToken"),
+              let url = URL(string: "\(authService.baseURL)/inputs/analyze") else {
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            print("RAW ANALYZE RESPONSE:", String(data: data, encoding: .utf8) ?? "")
+
+            let decoded = try JSONDecoder().decode(AnalysisResponse.self, from: data)
+
+            print("DECODED PROJECTIONS:", decoded.projections)
+
+            self.projections = decoded.projections
+
+        } catch {
+            print("Analyze failed:", error)
+        }
+    }
 }
+
+
