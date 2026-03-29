@@ -5,6 +5,7 @@
 import os
 import json
 from dotenv import load_dotenv
+import snowflake.connector
 
 
 classification_cache = {}
@@ -46,7 +47,7 @@ def waste_calculator(items):
 
         total += daily_value
 
-        if item["essential"] is False:
+        if not item.get("essential", False):
             waste += daily_value
 
     waste_percentage = round((waste / total) * 100, 2) if total > 0 else 0
@@ -145,9 +146,96 @@ def classify_items(items, preferences_text=""):
         })
 
     return classified_items
+
+
 #----------Snowflake Classify----------
+
 def classify_with_snowflake(names, preferences_text=""):
-    return {name.lower(): False for name in names}
+
+    prompt = f"""
+You are a strict JSON generator.
+
+Do NOT explain anything.
+Do NOT include text.
+Do NOT say hello.
+
+ONLY return valid JSON.
+
+Task:
+Classify each item as essential or non-essential.
+
+Items:
+{names}
+
+Return EXACTLY this format:
+[
+  {{"name": "item name", "essential": true}}
+]
+
+Rules:
+- Essential = necessary for survival, health, work, or responsibilities
+- Non-essential = luxury, entertainment, convenience
+
+Output JSON ONLY.
+"""
+
+    
+    safe_prompt = prompt.replace("'", "''")
+
+    conn = snowflake.connector.connect(
+    user=os.getenv("SW_USER"),
+    password=os.getenv("SW_PASS"),
+    account=os.getenv("SW_ACCOUNT"),
+    warehouse=os.getenv("SW_WAREHOUSE"),
+    database=os.getenv("SW_DB"),
+    schema=os.getenv("SW_SCHEMA"),
+)
+
+    cursor = conn.cursor()
+
+    try:
+        query = f"""
+        SELECT SNOWFLAKE.CORTEX.COMPLETE(
+            'mistral-large',
+            '{safe_prompt}'
+        );
+        """
+
+        cursor.execute(query)
+        row = cursor.fetchone()
+
+        if not row:
+            raise ValueError("No row returned from Snowflake")
+
+        result = row[0]
+
+        if not result:
+            raise ValueError("Empty response from Snowflake")
+
+        print("Snowflake raw response:", result)
+
+        text = str(result).strip()
+
+        
+        if "```" in text:
+            text = text.split("```")[1]
+            text = text.replace("json", "", 1).strip()
+            text = text.rsplit("```", 1)[0].strip()
+
+        data = json.loads(text)
+
+        return {
+            d.get("name", "").lower(): d.get("essential", False)
+            for d in data
+        }
+
+    except Exception as e:
+        print("Snowflake Error:", e)
+        return {name.lower(): False for name in names}
+
+    finally:
+        cursor.close()
+        conn.close()
 
 #----------Analyze spending----------
 
