@@ -3,7 +3,7 @@
 # Date: 3-28-26
 
 import json
-from snowflake_ai import process_request
+from logic import process_request
 
 #----------Test data----------
 request_data = {
@@ -31,6 +31,6 @@ request_data = {
 if __name__ == "__main__":
     result = process_request(request_data)
     
-    print("\n=== FINAL SYSTEM TEST / LOGIC OUTPUT ===")
+    print("\n=== FINAL SYSTEM TEST ===")
     print(json.dumps(result, indent=2))
     
