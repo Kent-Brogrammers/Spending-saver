@@ -48,6 +48,10 @@ struct ProfileView: View {
             profileRow("About", "info.circle")
             
             Button(action: {
+                UserDefaults.standard.removeObject(forKey: "authToken")
+                UserDefaults.standard.removeObject(forKey: "userID")
+                UserDefaults.standard.removeObject(forKey: "username")
+                
                 isLoggedIn = false
             }) {
                 Text("Log Out")

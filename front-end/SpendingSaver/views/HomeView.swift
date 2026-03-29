@@ -11,7 +11,7 @@ struct HomeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Hello Chris")
+                Text("Hello \(UserDefaults.standard.string(forKey: "username") ?? "User")")
                     .font(.system(size: 34, weight: .bold))
                     .foregroundColor(.white)
                 

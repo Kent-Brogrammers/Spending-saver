@@ -10,6 +10,8 @@ import SwiftUI
 struct MainTabView: View {
     @Binding var isLoggedIn: Bool
     @State private var selectedTab: AppTab = .home
+    @State private var showMenuOverlay = false
+    @State private var selectedMenuPage: MenuPage? = nil
     @StateObject private var expenseStore = ExpenseStore()
     
     var body: some View {
@@ -19,18 +21,45 @@ struct MainTabView: View {
             VStack(spacing: 0) {
                 Spacer()
                 
+                if showMenuOverlay {
+                    Color.black.opacity(0.35)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showMenuOverlay = false
+                            }
+                        }
+
+                    HStack(spacing: 0) {
+                        menuOverlay
+                        Spacer()
+                    }
+                    .transition(.move(edge: .leading))
+                }
+                
                 Group {
-                    switch selectedTab {
-                    case .home:
-                        DashboardView(expenseStore: expenseStore)
-                    case .activity:
-                        DashboardView(expenseStore: expenseStore)
-                    case .add:
-                        AddExpenseView(expenseStore: expenseStore, selectedTab: $selectedTab)
-                    case .analytics:
-                        AnalyticsView(expenseStore: expenseStore)
-                    case .profile:
-                        ProfileView(isLoggedIn: $isLoggedIn)
+                    if let selectedMenuPage {
+                        switch selectedMenuPage {
+                        case .history:
+                            HistoryView(expenseStore: expenseStore)
+                        case .health:
+                            HealthView(expenseStore: expenseStore)
+                        case .settings:
+                            SettingsView()
+                        }
+                    } else {
+                        switch selectedTab {
+                        case .home:
+                            DashboardView(expenseStore: expenseStore)
+                        case .menuPlaceholder:
+                            DashboardView(expenseStore: expenseStore)
+                        case .add:
+                            AddExpenseView(expenseStore: expenseStore, selectedTab: $selectedTab)
+                        case .analytics:
+                            AnalyticsView(expenseStore: expenseStore)
+                        case .profile:
+                            ProfileView(isLoggedIn: $isLoggedIn)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -58,10 +87,23 @@ extension MainTabView {
         .ignoresSafeArea()
     }
     
+    var menuButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showMenuOverlay.toggle()
+            }
+        } label: {
+            Image(systemName: "list.bullet")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(showMenuOverlay ? Color.cyan : Color.white.opacity(0.75))
+                .frame(width: 44, height: 44)
+        }
+    }
+    
     var bottomNavBar: some View {
         HStack(spacing: 18) {
+            menuButton
             navButton(.home, systemImage: "house.fill")
-            navButton(.activity, systemImage: "list.bullet")
             addButton
             navButton(.analytics, systemImage: "chart.line.uptrend.xyaxis")
             navButton(.profile, systemImage: "person.crop.circle")
@@ -78,6 +120,7 @@ extension MainTabView {
     
     func navButton(_ tab: AppTab, systemImage: String) -> some View {
         Button(action: {
+            selectedMenuPage = nil
             selectedTab = tab
         }) {
             Image(systemName: systemImage)
@@ -107,14 +150,100 @@ extension MainTabView {
         }
         .offset(y: -8)
     }
+    
+    func menuRow(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showMenuOverlay = false
+            }
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.cyan)
+                    .frame(width: 24)
+
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.white.opacity(0.45))
+            }
+            .padding()
+            .background(Color.white.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+    }
+    
+    var menuOverlay: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack {
+                Text("Menu")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showMenuOverlay = false
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.85))
+                        .frame(width: 36, height: 36)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(Circle())
+                }
+            }
+
+            VStack(spacing: 14) {
+                menuRow(title: "History", systemImage: "clock.arrow.circlepath") {
+                    selectedMenuPage = .history
+                }
+
+                menuRow(title: "Health", systemImage: "heart.text.square") {
+                    selectedMenuPage = .health
+                }
+
+                menuRow(title: "Settings", systemImage: "gearshape") {
+                    selectedMenuPage = .settings
+                }
+            }
+
+            Spacer()
+        }
+        .padding(24)
+        .frame(width: UIScreen.main.bounds.width * 0.68, maxHeight: .infinity)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+        )
+        .padding(.leading, 10)
+        .padding(.vertical, 20)
+    }
+    
 }
 
 enum AppTab {
+    case menuPlaceholder
     case home
-    case activity
     case add
     case analytics
     case profile
+}
+
+enum MenuPage {
+    case history
+    case health
+    case settings
 }
 
 #Preview {
