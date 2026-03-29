@@ -33,17 +33,25 @@ struct ErrorResponse: Codable {
 }
 
 struct InsertFoodRequest: Codable {
-    let food_name: String
+    let name: String
     let cost: Double
     let category: String
+
+    enum CodingKeys: String, CodingKey {
+        case name = "Name"
+        case cost = "Cost"
+        case category = "Category"
+    }
 }
 
 struct ExpenseDTO: Codable {
+    let order_id: Int?
     let food_name: String?
     let name: String?
     let cost: Double?
     let amount: Double?
     let category: String?
+    let order_datetime: String?
     let timestamp_column: String?
     let timestamp: String?
     let created_at: String?
