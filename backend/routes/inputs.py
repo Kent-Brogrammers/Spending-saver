@@ -16,11 +16,10 @@ def insertOrders():
     data = request.json
     user_id = request.user_id   
 
-    query = query = """
-    INSERT INTO orderitems (ID, food_name, cost, order_datetime, category, order_id, dow, FREQUENCY)
-    VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRENT_TIMESTAMP(), 'Day', %s))
+    query = query = """INSERT INTO orderitems (ID, food_name, cost, order_datetime, category, order_id, dow, FREQUENCY)
+VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRENT_TIMESTAMP(), 'Day', %s))
+"""
 
-    """
 
     params = [user_id, data.get("Name"), data.get("Cost"), data.get("Category"), data.get("Frequency")]
 
