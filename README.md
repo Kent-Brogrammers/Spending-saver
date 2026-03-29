@@ -42,7 +42,7 @@ This project uses Snowflake as both the database and AI inference layer, fully a
 
 Instead of calling external AI APIs, we intentionally designed the system so that:
 
-```text Data + AI live in the same platform (Snowflake)```
+```Data + AI live in the same platform (Snowflake)```
 
 This allows:
 * Reduced external dependencies
