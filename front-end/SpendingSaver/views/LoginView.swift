@@ -43,7 +43,7 @@ extension LoginView {
                 Spacer()
                 
                 VStack(spacing: 8) {
-                    Text("SpendingSaver")
+                    Text("Spending Saver")
                         .font(.system(size: 34, weight: .bold))
                         .foregroundColor(.white)
                     
@@ -128,6 +128,21 @@ extension LoginView {
         }
     }
     
+    //bypass for testing
+    private func login() async {
+        errorMessage = ""
+
+        isLoading = true
+        defer { isLoading = false }
+
+        UserDefaults.standard.set("temp-token", forKey: "authToken")
+        UserDefaults.standard.set(1, forKey: "userID")
+        UserDefaults.standard.set(username.isEmpty ? "Chris" : username, forKey: "username")
+
+        isLoggedIn = true
+    }
+    
+    /*
     private func login() async {
             errorMessage = ""
 
@@ -150,8 +165,9 @@ extension LoginView {
                 isLoggedIn = true
             } catch {
                 errorMessage = error.localizedDescription
+                
             }
-        }
+        }*/
 }
 
 #Preview {

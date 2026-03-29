@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var isLoggedIn = false
+    @State private var isLoggedIn = UserDefaults.standard.string(forKey: "authToken") != nil
     
     var body: some View {
         if isLoggedIn {
