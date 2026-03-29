@@ -36,11 +36,13 @@ struct InsertFoodRequest: Codable {
     let name: String
     let cost: Double
     let category: String
+    let frequency: String
 
     enum CodingKeys: String, CodingKey {
         case name = "Name"
         case cost = "Cost"
         case category = "Category"
+        case frequency = "Frequency"
     }
 }
 
