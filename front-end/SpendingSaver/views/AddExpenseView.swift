@@ -14,10 +14,12 @@ struct AddExpenseView: View {
     @State private var name = ""
     @State private var amount = ""
     @State private var category = "Groceries"
+    @State private var frequency = "One Time"
     @State private var isSaving = false
     @State private var errorMessage = ""
     
     let categories = ["Groceries", "Gas", "Coffee", "Shopping", "Other"]
+    let frequencies = ["One Time", "Daily", "Weekly", "Monthly", "Yearly"]
     
     var body: some View {
         VStack {
@@ -45,6 +47,17 @@ struct AddExpenseView: View {
                 Picker("Category", selection: $category) {
                     ForEach(categories, id: \.self) { cat in
                         Text(cat).tag(cat)
+                    }
+                }
+                .pickerStyle(.menu)
+                .padding()
+                .background(Color.white.opacity(0.10))
+                .foregroundColor(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                Picker("Frequency", selection: $frequency) {
+                    ForEach(frequencies, id: \.self) { option in
+                        Text(option).tag(option)
                     }
                 }
                 .pickerStyle(.menu)
@@ -108,11 +121,12 @@ struct AddExpenseView: View {
         defer { isSaving = false }
 
         do {
-            try await expenseStore.addExpense(name: name, amount: amountValue, category: category)
+            try await expenseStore.addExpense(name: name, amount: amountValue, category: category, frequency: frequency)
             errorMessage = ""
             name = ""
             amount = ""
             category = "Groceries"
+            frequency = "One Time"
             selectedTab = .home
         } catch {
             errorMessage = error.localizedDescription

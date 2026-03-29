@@ -44,7 +44,7 @@ class ExpenseStore: ObservableObject {
         }
     }
 
-    func addExpense(name: String, amount: Double, category: String) async throws {
+    func addExpense(name: String, amount: Double, category: String, frequency: String) async throws {
         guard let token = UserDefaults.standard.string(forKey: "authToken"), !token.isEmpty else {
             throw NSError(
                 domain: "",
@@ -53,7 +53,7 @@ class ExpenseStore: ObservableObject {
             )
         }
 
-        let request = InsertFoodRequest(name: name, cost: amount, category: category)
+        let request = InsertFoodRequest(name: name, cost: amount, category: category, frequency: frequency)
         try await authService.insertFood(token: token, requestBody: request)
         await loadExpenses()
     }
