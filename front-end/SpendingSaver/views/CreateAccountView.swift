@@ -12,9 +12,12 @@ struct CreateAccountView: View {
     @Binding var showCreateAccount: Bool
     
     @State private var fullName = ""
-    @State private var email = ""
+    @State private var username = ""
     @State private var password = ""
     @State private var confirmPassword = ""
+    @State private var message = ""
+    @State private var errorMessage = ""
+    @State private var isLoading = false
     
     var body: some View {
         ZStack {
@@ -50,7 +53,7 @@ struct CreateAccountView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .tint(.white)
                     
-                    TextField("", text: $email, prompt: Text("Email").foregroundColor(.white.opacity(0.7)))
+                    TextField("", text: $username, prompt: Text("Email").foregroundColor(.white.opacity(0.7)))
                         .padding()
                         .background(Color.white.opacity(0.18))
                         .foregroundColor(.white)
@@ -72,12 +75,22 @@ struct CreateAccountView: View {
                         .tint(.white)
                     
                     Button(action: {
-                        print("Create account tapped")
+                        Task {
+                            await createAccount()
+                        }
                     }) {
-                        Text("Create Account")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
+                        Group {
+                            if isLoading {
+                                ProgressView()
+                                    .tint(.white)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                Text("Create Account")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                            }
+                        }
                             .padding()
                             .background(
                                 LinearGradient(
@@ -87,6 +100,21 @@ struct CreateAccountView: View {
                                 )
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                    .disabled(isLoading)
+                    
+                    if !message.isEmpty {
+                        Text(message)
+                            .font(.footnote)
+                            .foregroundColor(.green)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    if !errorMessage.isEmpty {
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundColor(.red.opacity(0.9))
+                            .multilineTextAlignment(.center)
                     }
                     
                     Button(action: {
@@ -110,6 +138,37 @@ struct CreateAccountView: View {
                 Spacer()
             }
             .padding()
+        }
+    }
+    
+    private func createAccount() async {
+        message = ""
+        errorMessage = ""
+
+        guard !fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !password.isEmpty else {
+            errorMessage = "Enter full name, username, and password."
+            return
+        }
+
+        guard password == confirmPassword else {
+            errorMessage = "Passwords do not match."
+            return
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let result = try await AuthService.shared.createAccount(
+                fullName: fullName,
+                username: username,
+                password: password
+            )
+            message = result.message
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }

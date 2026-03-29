@@ -10,9 +10,11 @@ import SwiftUI
 
 struct LoginView: View {
     @Binding var isLoggedIn: Bool
-    @State private var email = ""
+    @State private var username = ""
     @State private var password = ""
     @State private var showCreateAccount = false
+    @State private var errorMessage = ""
+    @State private var isLoading: Bool = false
     
     var body: some View {
         if showCreateAccount {
@@ -52,7 +54,7 @@ extension LoginView {
                 }
                 
                 VStack(spacing: 16) {
-                    TextField("", text: $email, prompt: Text("Email").foregroundColor(.white.opacity(0.7)))
+                    TextField("", text: $username, prompt: Text("Email").foregroundColor(.white.opacity(0.7)))
                         .padding()
                         .background(Color.white.opacity(0.18))
                         .foregroundColor(.white)
@@ -67,22 +69,40 @@ extension LoginView {
                         .tint(.white)
                     
                     Button(action: {
-                        isLoggedIn = true
+                        Task {
+                            await login()
+                        }
                     }) {
-                        Text("Log In")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.blue, Color.blue.opacity(0.7)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
+                        Group {
+                            if isLoading {
+                                ProgressView()
+                                    .tint(.white)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                Text("Log In")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                            }
+                        }
+                        .padding()
+                        .background(
+                            LinearGradient(
+                                colors: [Color.blue, Color.blue.opacity(0.7)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
                             )
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
+                    .disabled(isLoading)
+                    
+                    if !errorMessage.isEmpty {
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundColor(.red.opacity(0.9))
+                            .multilineTextAlignment(.center)
+                                        }
                     
                     Button(action: {
                         showCreateAccount = true
@@ -107,6 +127,31 @@ extension LoginView {
             .padding()
         }
     }
+    
+    private func login() async {
+            errorMessage = ""
+
+            guard !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  !password.isEmpty else {
+                errorMessage = "Enter username and password."
+                return
+            }
+
+            isLoading = true
+            defer { isLoading = false }
+
+            do {
+                let result = try await AuthService.shared.login(username: username, password: password)
+
+                UserDefaults.standard.set(result.token, forKey: "authToken")
+                UserDefaults.standard.set(result.user_id, forKey: "userID")
+                UserDefaults.standard.set(username, forKey: "username")
+
+                isLoggedIn = true
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
 }
 
 #Preview {
