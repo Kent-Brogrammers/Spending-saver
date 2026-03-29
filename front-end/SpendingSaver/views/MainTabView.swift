@@ -28,6 +28,10 @@ struct MainTabView: View {
                             HistoryView(expenseStore: expenseStore)
                         case .health:
                             HealthView(expenseStore: expenseStore)
+                        case .preferences:
+                            PreferencesView()
+                        case .trends:
+                            TrendsView(expenseStore: expenseStore)
                         case .settings:
                             SettingsView()
                         }
@@ -219,6 +223,14 @@ extension MainTabView {
                     selectedMenuPage = .health
                 }
 
+                menuRow(title: "Preferences", systemImage: "slider.horizontal.3") {
+                    selectedMenuPage = .preferences
+                }
+
+                menuRow(title: "Trends", systemImage: "sparkles") {
+                    selectedMenuPage = .trends
+                }
+
                 menuRow(title: "Settings", systemImage: "gearshape") {
                     selectedMenuPage = .settings
                 }
@@ -250,6 +262,8 @@ enum AppTab {
 enum MenuPage {
     case history
     case health
+    case preferences
+    case trends
     case settings
 }
 

@@ -46,6 +46,18 @@ struct InsertFoodRequest: Codable {
     }
 }
 
+struct DeleteFoodRequest: Codable {
+    let orderID: Int
+
+    enum CodingKeys: String, CodingKey {
+        case orderID = "ORDER_ID"
+    }
+}
+
+struct PreferenceRequest: Codable {
+    let preference: String
+}
+
 struct ExpenseDTO: Codable {
     let order_id: Int?
     let food_name: String?
