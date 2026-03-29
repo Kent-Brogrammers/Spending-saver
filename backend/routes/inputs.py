@@ -14,26 +14,89 @@ def inputsP():
     print('a')
     return jsonify("PP")
 
-@inputsPage.route('/insertFood')
+from flask import jsonify, request
+from db_conn.dbHelper import get_connection
+from token_validator.tv import token_required
+
+@inputsPage.route('/insertFood', methods=['POST'])
 @token_required
 def insertOrders():
     data = request.json
     user_id = request.user_id
-    return
 
-@inputsPage.route('/insertPref')
+    query = query = """
+INSERT INTO orderitems (user_id, food_name, cost, order_datetime, category, order_id, dow)
+VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRENT_TIMESTAMP(), 'Day'))
+"""
+
+    params = [user_id, data.get("Name"), data.get("Cost"), data.get("Category")]
+
+    try:
+        get_connection("ITEMS_DB", query=query, params=params)
+        return jsonify({"message": "Order inserted successfully!"}), 201
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+from flask import jsonify, request
+from db_conn.dbHelper import get_connection
+from token_validator.tv import token_required
+
+# Insert a food preference
+@inputsPage.route('/insertPref', methods=['POST'])
 @token_required
 def insertPref():
     data = request.json
     user_id = request.user_id
-    return
+    food_name = data.get("food_name")
 
-@inputsPage.route('/removePref')
+    # Check if food_name is provided
+    if not food_name:
+        return jsonify({"error": "Food name is required"}), 400
+
+    # Query to insert the food preference
+    query = """
+    INSERT INTO FOOD_PREFERENCES (ID, food_name)
+    VALUES (%s, %s)
+    """
+
+    params = [user_id, food_name,]
+
+    try:
+        # Insert the food preference into the database
+        get_connection("Users", query=query, params=params)
+        return jsonify({"message": f"Food preference '{food_name}' added for user {user_id}."}), 201
+    except Exception as e:
+        # Handle any errors
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
+# Remove a food preference
+@inputsPage.route('/removePref', methods=['DELETE'])
 @token_required
 def removePref():
     data = request.json
     user_id = request.user_id
-    return
+    food_name = data.get("food_name")
+
+    # Check if food_name is provided
+    if not food_name:
+        return jsonify({"error": "Food name is required"}), 400
+
+    # Query to remove the food preference
+    query = """
+    DELETE FROM FOOD_PREFERENCES
+    WHERE ID = %s AND food_name = %s
+    """
+
+    params = [user_id, food_name]
+
+    try:
+        # Perform the delete operation
+        get_connection("Users", query=query, params=params)
+        return jsonify({"message": f"Food preference '{food_name}' removed for user {user_id}."}), 200
+    except Exception as e:
+        # Handle any errors
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
 @inputsPage.route('/analyze')
