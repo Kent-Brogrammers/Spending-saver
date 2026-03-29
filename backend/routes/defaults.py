@@ -35,4 +35,13 @@ def essList():
     items = [{"food_name": row[0]} for row in rows]
     return jsonify(items), 200
 
-    
+@defaultData.route('/listPreference')
+@token_required
+def prefList():
+    user_id = request.user_id
+    result = get_connection('Users',
+        'SELECT PREFERENCE FROM Users.PUBLIC.Users WHERE ID = %s',
+        True,
+        params=[user_id]
+    )
+    return jsonify({"preference": result[0] if result else None}), 200
