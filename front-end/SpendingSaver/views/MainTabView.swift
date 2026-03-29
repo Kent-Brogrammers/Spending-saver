@@ -10,6 +10,7 @@ import SwiftUI
 struct MainTabView: View {
     @Binding var isLoggedIn: Bool
     @State private var selectedTab: AppTab = .home
+    @StateObject private var expenseStore = ExpenseStore()
     
     var body: some View {
         ZStack {
@@ -21,13 +22,13 @@ struct MainTabView: View {
                 Group {
                     switch selectedTab {
                     case .home:
-                        HomeView()
+                        DashboardView(expenseStore: expenseStore)
                     case .activity:
-                        HomeView() // temp until ActivityView exists
+                        DashboardView(expenseStore: expenseStore)
                     case .add:
-                        AddExpenseView()
+                        AddExpenseView(expenseStore: expenseStore, selectedTab: $selectedTab)
                     case .analytics:
-                        AnalyticsView()
+                        AnalyticsView(expenseStore: expenseStore)
                     case .profile:
                         ProfileView(isLoggedIn: $isLoggedIn)
                     }
