@@ -1,10 +1,14 @@
+import sys
 import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from flask import Flask, jsonify
 from dotenv import load_dotenv
 from flask_cors import CORS
 from db_conn.dbHelper import get_connection
-from routes.login import *
-from routes.inputs import *
+from backend.routes.login import loginPage
+from backend.routes.inputs import inputsPage
 
 
 load_dotenv(dotenv_path="../.env")

@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from db_conn.dbHelper import get_connection
 import os
-from token_validator.tv import token_required
+from backend.token_validator.tv import *
 from logic.logic import *
 import datetime
 
@@ -10,30 +10,30 @@ inputsPage = Blueprint("inputsPage", __name__, url_prefix="/inputs")
 SECRET_KEY = os.getenv("SECRET_KEY")  # for JWT
 
 @inputsPage.route('/')
-def inputs():
+def inputsP():
     print('a')
-    return
+    return jsonify("INPUTS")
 
 @inputsPage.route('/insertFood')
 @token_required
 def insertOrders():
     data = request.json
     user_id = request.user_id
-    return
+    return jsonify("INPUTS")
 
 @inputsPage.route('/insertPref')
 @token_required
 def insertPref():
     data = request.json
     user_id = request.user_id
-    return
+    return jsonify("INPUTS")
 
 @inputsPage.route('/removePref')
 @token_required
 def removePref():
     data = request.json
     user_id = request.user_id
-    return
+    return jsonify("INPUTS")
 
 
 @inputsPage.route('/analyze')
@@ -46,8 +46,7 @@ def analyze():
     
     nitems = []
     # Updated SQL query to include timestamp_column (or the actual column that stores the timestamp)
-    items = get_connection('SELECT i.food_name, i.cost, CASE WHEN fp.food_name IS NOT NULL THEN TRUE ELSE FALSE END AS is_preferred, i.timestamp_column FROM items_db i LEFT JOIN FOOD_PREFERENCES fp ON i.food_name = fp.food_name AND i.user_id = fp.user_id WHERE i.user_id = %s;', False, params=['items_db', user_id,])
-
+    items = get_connection('SELECT i.food_name, i.cost, CASE WHEN fp.food_name IS NOT NULL THEN TRUE ELSE FALSE END AS is_preferred, i.timestamp_column FROM items_db i LEFT JOIN FOOD_PREFERENCES fp ON i.food_name = fp.food_name AND i.user_id = fp.user_id WHERE i.user_id = %s;', False, params=[user_id])
     # Append items to nitems
     for i in items:
         nitems.append([i[0], i[1], i[2]])

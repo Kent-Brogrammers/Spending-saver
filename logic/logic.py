@@ -10,7 +10,7 @@ from google import genai
 classification_cache = {}
 
 #----------Configuration----------
-load_dotenv(".env_keys")
+#load_dotenv(dotenv_path="../.env")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
