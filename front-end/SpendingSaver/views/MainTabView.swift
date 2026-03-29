@@ -20,23 +20,7 @@ struct MainTabView: View {
             
             VStack(spacing: 0) {
                 Spacer()
-                
-                if showMenuOverlay {
-                    Color.black.opacity(0.35)
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showMenuOverlay = false
-                            }
-                        }
-
-                    HStack(spacing: 0) {
-                        menuOverlay
-                        Spacer()
-                    }
-                    .transition(.move(edge: .leading))
-                }
-                
+               
                 Group {
                     if let selectedMenuPage {
                         switch selectedMenuPage {
@@ -69,9 +53,27 @@ struct MainTabView: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
             .padding(.bottom, 12)
+            .zIndex(0)
+            
+            if showMenuOverlay {
+                Color.black.opacity(0.35)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            showMenuOverlay = false
+                        }
+                    }
+                    .zIndex(1)
+
+                    menuOverlay
+                        .zIndex(2)
+                        .transition(.move(edge: .leading))
         }
     }
 }
+
+}
+
 
 extension MainTabView {
     var backgroundView: some View {
@@ -185,9 +187,9 @@ extension MainTabView {
                 Text("Menu")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.white)
-
+                
                 Spacer()
-
+                
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         showMenuOverlay = false
@@ -201,16 +203,16 @@ extension MainTabView {
                         .clipShape(Circle())
                 }
             }
-
+            
             VStack(spacing: 14) {
                 menuRow(title: "History", systemImage: "clock.arrow.circlepath") {
                     selectedMenuPage = .history
                 }
-
+                
                 menuRow(title: "Health", systemImage: "heart.text.square") {
                     selectedMenuPage = .health
                 }
-
+                
                 menuRow(title: "Settings", systemImage: "gearshape") {
                     selectedMenuPage = .settings
                 }
@@ -219,7 +221,7 @@ extension MainTabView {
             Spacer()
         }
         .padding(24)
-        .frame(width: UIScreen.main.bounds.width * 0.68, maxHeight: .infinity)
+        .frame(maxWidth: UIScreen.main.bounds.width * 0.68)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
         .overlay(
