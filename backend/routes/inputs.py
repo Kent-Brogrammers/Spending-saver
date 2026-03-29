@@ -115,7 +115,7 @@ def changePref():
     if not preference:
         return jsonify({"error": "Preference is required"}), 400
 
-    query = "UPDATE Users.PUBLIC.Users SET PREFERENCE = %s WHERE ID = %s"
+    query = "UPDATE Users.PUBLIC.Users SET PREFERENCEs = %s WHERE ID = %s"
     params = [preference, user_id,]
 
     try:
