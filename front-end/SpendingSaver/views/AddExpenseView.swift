@@ -15,6 +15,7 @@ struct AddExpenseView: View {
     @State private var amount = ""
     @State private var category = "Groceries"
     @State private var frequency = "One Time"
+    @State private var isEssential = false
     @State private var isSaving = false
     @State private var errorMessage = ""
     
@@ -64,6 +65,20 @@ struct AddExpenseView: View {
                 .padding()
                 .background(Color.white.opacity(0.10))
                 .foregroundColor(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                Toggle(isOn: $isEssential) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(isEssential ? "Essential" : "Non-Essential")
+                            .foregroundColor(.white)
+                        Text("Mark whether this purchase is a need or a want")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                }
+                .tint(.cyan)
+                .padding()
+                .background(Color.white.opacity(0.10))
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 
                 HStack {
@@ -121,12 +136,19 @@ struct AddExpenseView: View {
         defer { isSaving = false }
 
         do {
-            try await expenseStore.addExpense(name: name, amount: amountValue, category: category, frequency: frequency)
+            try await expenseStore.addExpense(
+                name: name,
+                amount: amountValue,
+                category: category,
+                frequency: frequency,
+                isEssential: isEssential
+            )
             errorMessage = ""
             name = ""
             amount = ""
             category = "Groceries"
             frequency = "One Time"
+            isEssential = false
             selectedTab = .home
         } catch {
             errorMessage = error.localizedDescription

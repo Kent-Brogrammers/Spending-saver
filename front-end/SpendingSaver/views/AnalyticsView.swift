@@ -14,8 +14,8 @@ struct AnalyticsView: View {
         expenseStore.expenses.reduce(0) { $0 + $1.amount }
     }
 
-    var recentTransactions: [ExpenseItem] {
-        Array(expenseStore.expenses.prefix(3))
+    var allTransactions: [ExpenseItem] {
+        expenseStore.expenses
     }
     
     var body: some View {
@@ -54,15 +54,15 @@ struct AnalyticsView: View {
                 )
                 
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Recent Transactions")
+                    Text("All Transactions")
                         .font(.headline)
                         .foregroundColor(.white)
                     
-                    if recentTransactions.isEmpty {
+                    if allTransactions.isEmpty {
                         Text("No expenses yet")
                             .foregroundColor(.white.opacity(0.7))
                     } else {
-                        ForEach(recentTransactions) { expense in
+                        ForEach(allTransactions) { expense in
                             transactionRow(expense.name, expense.amount.formatted(.currency(code: "USD")))
                         }
                     }
