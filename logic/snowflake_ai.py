@@ -28,7 +28,7 @@ def to_daily(price, frequency):
     elif frequency == "yearly":
         return price / 365
     else: # for one time purchases 
-        return price / 30
+        return price
 
 #----------Waste Claculator----------
 def waste_calculator(items):
@@ -104,6 +104,7 @@ Your spending is {trend_text}.
 #----------Classifier----------
 
 def classify_items(items, preferences_text=""):
+    preference_keywords = preferences_text.lower().replace(",", "").split()
     names = [item.get("name", "") for item in items]
 
     cached_result_map = {}
@@ -134,7 +135,13 @@ def classify_items(items, preferences_text=""):
         price = item.get("price", 0)
         freq = item.get("frequency", "one-time")
 
-        essential = result_map.get(name.lower(), False)
+        name_lower = name.lower()
+        essential = result_map.get(name_lower, False)
+
+        
+        for keyword in preference_keywords:
+            if keyword in name_lower:
+                essential = True
 
         classification_cache[name.lower()] = essential
 
@@ -164,8 +171,11 @@ ONLY return valid JSON.
 Task:
 Classify each item as essential or non-essential.
 
+User preferences:
+{preferences_text}
+
 Items:
-{names}
+{",".join(names)}
 
 Return EXACTLY this format:
 [
@@ -175,6 +185,9 @@ Return EXACTLY this format:
 Rules:
 - Essential = necessary for survival, health, work, or responsibilities
 - Non-essential = luxury, entertainment, convenience
+- ALWAYS prioritize user preferences
+- If the user says something is essential, it MUST be essential
+- Only mark additional items essential if they are strongly related to preferences
 
 Output JSON ONLY.
 """
@@ -193,6 +206,10 @@ Output JSON ONLY.
 
     cursor = conn.cursor()
 
+    print("\n=== PROMPT SENT TO SNOWFLAKE ===")
+    print(prompt)
+    print("================================\n")
+
     try:
         query = f"""
         SELECT SNOWFLAKE.CORTEX.COMPLETE(
@@ -200,6 +217,9 @@ Output JSON ONLY.
             '{safe_prompt}'
         );
         """
+        print("\n=== SAFE PROMPT (SQL) ===")
+        print(safe_prompt)
+        print("=========================\n")
 
         cursor.execute(query)
         row = cursor.fetchone()
@@ -223,6 +243,22 @@ Output JSON ONLY.
             text = text.rsplit("```", 1)[0].strip()
 
         data = json.loads(text)
+
+        print("\n=== PARSED AI OUTPUT ===")
+        for d in data:
+            print(d)
+        print("========================\n")
+
+        result_map = {
+            d.get("name", "").lower(): d.get("essential", False)
+            for d in data
+        }
+
+        print("\n=== FINAL RESULT MAP ===")
+        print(result_map)
+        print("========================\n")
+
+        return result_map
 
         return {
             d.get("name", "").lower(): d.get("essential", False)
