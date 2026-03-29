@@ -13,7 +13,7 @@ classification_cache = {}
 #----------Configuration----------
 load_dotenv()
 AI_PROVIDER = "snowflake"
-DEBUG = False
+DEBUG = True
 
 #----------Helper function----------
 
@@ -69,7 +69,7 @@ def projections(waste):
     }
 
 #----------Trends----------
-
+# calculates the change in spending compared to last week
 def calculate_trends(this_week, last_week):
     if last_week == 0:
         return 0
@@ -105,12 +105,19 @@ Your spending is {trend_text}.
 def classify_items(items, preferences_text=""):
     preference_keywords = preferences_text.lower().replace(",", "").split()
     names = [item.get("name", "") for item in items]
+    
 
     cached_result_map = {}
     uncached_names = []
 
-    for name in names:
+    for item in items:
+        name = item.get("name", "")
         key = name.lower()
+
+        if "essential" in item:
+            cached_result_map[key] = item["essential"]
+            continue
+
         if key in classification_cache:
             cached_result_map[key] = classification_cache[key]
         else:
@@ -135,14 +142,18 @@ def classify_items(items, preferences_text=""):
         freq = item.get("frequency", "one-time")
 
         name_lower = name.lower()
-        essential = result_map.get(name_lower, False)
 
-        
-        for keyword in preference_keywords:
-            if keyword in name_lower:
-                essential = True
+        if "essential" in item:
+            essential = item["essential"]
 
-        classification_cache[name.lower()] = essential
+        else:
+            essential = result_map.get(name_lower, False)
+
+            for keyword in preference_keywords:
+                if keyword in name_lower:
+                    essential = True
+
+        classification_cache[name_lower] = essential
 
         classified_items.append({
             "name": name,
