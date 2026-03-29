@@ -11,7 +11,7 @@ final class AuthService {
     static let shared = AuthService()
     private init() {}
 
-    private let baseURL = "http://127.0.0.1:5000"
+    let baseURL = "http://10.14.98.21:5000"
 
     func login(username: String, password: String) async throws -> LoginResponse {
         guard let url = URL(string: "\(baseURL)/login/login") else {
@@ -30,7 +30,8 @@ final class AuthService {
         }
 
         if (200...299).contains(httpResponse.statusCode) {
-            return try JSONDecoder().decode(LoginResponse.self, from: data)
+            let result = try JSONDecoder().decode(LoginResponse.self, from: data)
+            return result
         } else {
             let apiError = try? JSONDecoder().decode(ErrorResponse.self, from: data)
             throw NSError(
@@ -115,6 +116,30 @@ final class AuthService {
         }
     }
 
+    func updatePreference(token: String, preference: String) async throws -> MessageResponse {
+        guard let url = URL(string: "\(baseURL)/inputs/changePref") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONEncoder().encode(PreferenceRequest(preference: preference))
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        if (200...299).contains(httpResponse.statusCode) {
+            return (try? JSONDecoder().decode(MessageResponse.self, from: data)) ?? MessageResponse(message: "Preference saved")
+        } else {
+            throw apiError(from: data, statusCode: httpResponse.statusCode, fallback: "Failed to save preference")
+        }
+    }
+
     private func decodeExpenseList(from data: Data) throws -> [ExpenseDTO] {
         let decoder = JSONDecoder()
 
@@ -148,5 +173,53 @@ final class AuthService {
                 NSLocalizedDescriptionKey: errorResponse?.error ?? messageResponse?.message ?? fallback
             ]
         )
+    }
+    
+    func analyzeSpending(token: String, data: [String: Any]) async throws -> AnalysisResponse {
+        guard let url = URL(string: "\(baseURL)/inputs/analyze") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: data)
+
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        if (200...299).contains(httpResponse.statusCode) {
+            return try JSONDecoder().decode(AnalysisResponse.self, from: responseData)
+        } else {
+            throw NSError(domain: "", code: httpResponse.statusCode, userInfo: [
+                NSLocalizedDescriptionKey: "Analyze request failed"
+            ])
+        }
+    }
+    
+    func deleteFood(token: String, orderID: Int) async throws {
+        guard let url = URL(string: "\(baseURL)/inputs/deleteFood") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let body = DeleteFoodRequest(orderID: orderID)
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
     }
 }

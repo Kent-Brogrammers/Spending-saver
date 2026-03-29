@@ -9,8 +9,9 @@ import SwiftUI
 
 struct SettingsView: View {
     @AppStorage("isDarkMode") private var isDarkMode = true
-    @AppStorage("displayName") private var displayName = "Chris"
+    @AppStorage("displayName") private var displayName = ""
     @State private var editedName = ""
+    @FocusState private var isNameFieldFocused: Bool
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -26,20 +27,19 @@ struct SettingsView: View {
                         .font(.headline)
                         .foregroundColor(.white)
                     
-                    TextField("", text: Binding(
-                        get: { editedName.isEmpty ? displayName : editedName },
-                        set: { editedName = $0 }
-                    ), prompt: Text("Display Name").foregroundColor(.white.opacity(0.7)))
+                    TextField("", text: $editedName, prompt: Text("Display Name").foregroundColor(.white.opacity(0.7)))
                     .padding()
                     .background(Color.white.opacity(0.10))
                     .foregroundColor(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .focused($isNameFieldFocused)
                     
                     Button("Save Name") {
                         let trimmed = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
                         if !trimmed.isEmpty {
                             displayName = trimmed
-                            UserDefaults.standard.set(trimmed, forKey: "username")
+                            editedName = trimmed
+                            isNameFieldFocused = false
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -114,8 +114,16 @@ struct SettingsView: View {
             .padding(.bottom, 20)
         }
         .onAppear {
-            editedName = displayName
+            editedName = storedDisplayName
         }
+    }
+
+    var storedDisplayName: String {
+        if !displayName.isEmpty {
+            return displayName
+        }
+
+        return UserDefaults.standard.string(forKey: "username") ?? "User"
     }
     
     func settingsRow(_ title: String, _ icon: String) -> some View {

@@ -105,6 +105,45 @@ def removePref():
         # Handle any errors
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
+@inputsPage.route('/changePref', methods=['PUT'])
+@token_required
+def changePref():
+    data = request.json
+    user_id = request.user_id
+    preference = data.get("preference")
+
+    if not preference:
+        return jsonify({"error": "Preference is required"}), 400
+
+    query = "UPDATE Users.PUBLIC.Users SET PREFERENCEs = %s WHERE ID = %s"
+    params = [preference, user_id,]
+
+    try:
+        get_connection("Users", query=query, params=params, commit=True)
+        return jsonify({"message": "Preference updated successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@inputsPage.route('/changeName', methods=['POST'])
+@token_required
+def changeName():
+    data = request.json
+    user_id = request.user_id
+    full_name = data.get("full_name")
+
+    if not full_name:
+        return jsonify({"error": "Full name is required"}), 400
+
+    query = "UPDATE Users.PUBLIC.Users SET FULL_NAME = %s WHERE ID = %s"
+    params = [full_name, user_id]
+
+    try:
+        get_connection("Users", query=query, params=params, commit=True)
+        return jsonify({"message": "Name updated successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
 
 @inputsPage.route('/analyze', methods=['POST'])
 @token_required
@@ -112,23 +151,33 @@ def analyze():
     user_id = request.user_id
 
     # Fetch items from DB
-    rows = get_connection('ITEMS_DB',
-        'SELECT i.FOOD_NAME, i.COST, '
-        'CASE WHEN fp.FOOD_NAME IS NOT NULL THEN TRUE ELSE FALSE END AS IS_PREFERRED, '
-        'i.ORDER_DATETIME '
-        'FROM ITEMS_DB.PUBLIC.ORDERITEMS i '
-        'LEFT JOIN Users.PUBLIC.FOOD_PREFERENCES fp '
-        'ON i.FOOD_NAME = fp.FOOD_NAME AND i.ID = fp.ID '
-        'WHERE i.ID = %s',
-        False,
-        params=[user_id]
-    )
+    rows = get_connection(
+    'ITEMS_DB',
+    '''
+    SELECT 
+        i.FOOD_NAME,
+        i.COST,
+        i.FREQUENCY,
+        i.ESSENTIAL,
+        i.ORDER_DATETIME
+    FROM ITEMS_DB.PUBLIC.ORDERITEMS i
+    WHERE i.ID = %s
+    ''',
+    False,
+    params=[user_id]
+)
 
     # Convert tuples to dicts
     items = [
-        {"name": row[0], "price": float(row[1]), "is_preferred": row[2], "timestamp": row[3]}
-        for row in rows
-    ]
+    {
+        "name": row[0],
+        "price": float(row[1]),
+        "frequency": (row[2] or "one-time").lower().replace("_", "-"),
+        "essential": bool(row[3]),
+        "timestamp": row[4]
+    }
+    for row in rows
+]
 
     # Date calculations
     today = datetime.date.today()

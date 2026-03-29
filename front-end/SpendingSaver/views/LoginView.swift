@@ -9,7 +9,10 @@
 import SwiftUI
 
 struct LoginView: View {
+    @AppStorage("isDarkMode") private var isDarkMode = true
+    @State private var rememberMe = false
     @Binding var isLoggedIn: Bool
+    @EnvironmentObject var expenseStore: ExpenseStore
     @State private var username = ""
     @State private var password = ""
     @State private var showCreateAccount = false
@@ -29,11 +32,7 @@ extension LoginView {
     var loginContent: some View {
         ZStack {
             LinearGradient(
-                colors: [
-                    Color(red: 0.05, green: 0.07, blue: 0.15),  // deep navy
-                    Color(red: 0.10, green: 0.18, blue: 0.35),  // blue
-                    Color(red: 0.12, green: 0.35, blue: 0.40)   // teal hint
-                ],
+                colors: backgroundColors,
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -67,6 +66,10 @@ extension LoginView {
                         .foregroundColor(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .tint(.white)
+                    
+                    Toggle("Remember Me", isOn: $rememberMe)
+                        .toggleStyle(SwitchToggleStyle(tint: .blue))
+                        .foregroundColor(.white)
                     
                     Button(action: {
                         Task {
@@ -143,17 +146,46 @@ extension LoginView {
         do {
             let result = try await AuthService.shared.login(username: username, password: password)
 
-            UserDefaults.standard.set(result.token, forKey: "authToken")
+            if rememberMe {
+                UserDefaults.standard.set(result.token, forKey: "authToken")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "authToken")
+            }
+            UserDefaults.standard.set(rememberMe, forKey: "rememberMe")
             UserDefaults.standard.set(result.user_id, forKey: "userID")
             UserDefaults.standard.set(username, forKey: "username")
+            if UserDefaults.standard.string(forKey: "displayName")?.isEmpty != false {
+                UserDefaults.standard.set(username, forKey: "displayName")
+            }
+
+            
+            await expenseStore.loadExpenses()
 
             isLoggedIn = true
+
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    var backgroundColors: [Color] {
+        if isDarkMode {
+            return [
+                Color(red: 0.05, green: 0.07, blue: 0.15),
+                Color(red: 0.10, green: 0.18, blue: 0.35),
+                Color(red: 0.12, green: 0.35, blue: 0.40)
+            ]
+        }
+
+        return [
+            Color(red: 0.30, green: 0.39, blue: 0.62),
+            Color(red: 0.41, green: 0.58, blue: 0.76),
+            Color(red: 0.43, green: 0.70, blue: 0.72)
+        ]
     }
 }
 
 #Preview {
     LoginView(isLoggedIn: .constant(false))
+        .environmentObject(ExpenseStore())
 }

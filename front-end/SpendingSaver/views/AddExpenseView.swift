@@ -8,14 +8,16 @@
 import SwiftUI
 
 struct AddExpenseView: View {
-    @ObservedObject var expenseStore: ExpenseStore
+    @EnvironmentObject var expenseStore: ExpenseStore
     @Binding var selectedTab: AppTab
     
     @State private var name = ""
     @State private var amount = ""
     @State private var category = "Groceries"
     @State private var frequency = "One Time"
+    @State private var isEssential = false
     @State private var isSaving = false
+    @State private var statusMessage = ""
     @State private var errorMessage = ""
     
     let categories = ["Groceries", "Gas", "Coffee", "Shopping", "Other"]
@@ -36,6 +38,9 @@ struct AddExpenseView: View {
                     .background(Color.white.opacity(0.10))
                     .foregroundColor(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .onChange(of: name) {
+                        statusMessage = ""
+                    }
                 
                 TextField("", text: $amount, prompt: Text("$0.00").foregroundColor(.white.opacity(0.65)))
                     .padding()
@@ -43,6 +48,9 @@ struct AddExpenseView: View {
                     .foregroundColor(.white)
                     .keyboardType(.decimalPad)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .onChange(of: amount) {
+                        statusMessage = ""
+                    }
                 
                 Picker("Category", selection: $category) {
                     ForEach(categories, id: \.self) { cat in
@@ -65,11 +73,27 @@ struct AddExpenseView: View {
                 .background(Color.white.opacity(0.10))
                 .foregroundColor(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                Toggle(isOn: $isEssential) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(isEssential ? "Essential" : "Non-Essential")
+                            .foregroundColor(.white)
+                        Text("Mark whether this purchase is a need or a want")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                }
+                .tint(.cyan)
+                .padding()
+                .background(Color.white.opacity(0.10))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 
                 HStack {
                     Button("Cancel") {
                         name = ""
                         amount = ""
+                        errorMessage = ""
+                        statusMessage = ""
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -96,6 +120,12 @@ struct AddExpenseView: View {
                     .disabled(isSaving)
                 }
 
+                if !statusMessage.isEmpty {
+                    Text(statusMessage)
+                        .font(.footnote)
+                        .foregroundColor(.green.opacity(0.9))
+                }
+
                 if !errorMessage.isEmpty {
                     Text(errorMessage)
                         .font(.footnote)
@@ -114,26 +144,47 @@ struct AddExpenseView: View {
         }
     }
     func addExpense() async {
-        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        guard let amountValue = Double(amount) else { return }
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedName.isEmpty else {
+            errorMessage = "Enter a name for the expense."
+            statusMessage = ""
+            return
+        }
+
+        guard let amountValue = Double(amount), amountValue > 0 else {
+            errorMessage = "Enter a valid amount greater than zero."
+            statusMessage = ""
+            return
+        }
 
         isSaving = true
         defer { isSaving = false }
 
         do {
-            try await expenseStore.addExpense(name: name, amount: amountValue, category: category, frequency: frequency)
+            try await expenseStore.addExpense(
+                name: trimmedName,
+                amount: amountValue,
+                category: category,
+                frequency: frequency,
+                isEssential: isEssential
+            )
             errorMessage = ""
+            statusMessage = "\(trimmedName) was added successfully."
             name = ""
             amount = ""
             category = "Groceries"
             frequency = "One Time"
+            isEssential = false
             selectedTab = .home
         } catch {
+            statusMessage = ""
             errorMessage = error.localizedDescription
         }
     }
 }
 
 #Preview {
-    AddExpenseView(expenseStore: ExpenseStore(), selectedTab: .constant(.add))
+    AddExpenseView(selectedTab: .constant(.add))
+        .environmentObject(ExpenseStore())
 }

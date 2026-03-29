@@ -8,88 +8,106 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @AppStorage("isDarkMode") private var isDarkMode = true
     @Binding var isLoggedIn: Bool
+    @EnvironmentObject var expenseStore: ExpenseStore
     @State private var selectedTab: AppTab = .home
     @State private var showMenuOverlay = false
     @State private var selectedMenuPage: MenuPage? = nil
-    @StateObject private var expenseStore = ExpenseStore()
     
     var body: some View {
-        ZStack {
-            backgroundView
-            
-            VStack(spacing: 0) {
-                Spacer()
-               
-                Group {
-                    if let selectedMenuPage {
-                        switch selectedMenuPage {
-                        case .history:
-                            HistoryView(expenseStore: expenseStore)
-                        case .health:
-                            HealthView(expenseStore: expenseStore)
-                        case .settings:
-                            SettingsView()
-                        }
-                    } else {
-                        switch selectedTab {
-                        case .home:
-                            DashboardView(expenseStore: expenseStore)
-                        case .menuPlaceholder:
-                            DashboardView(expenseStore: expenseStore)
-                        case .add:
-                            AddExpenseView(expenseStore: expenseStore, selectedTab: $selectedTab)
-                        case .analytics:
-                            AnalyticsView(expenseStore: expenseStore)
-                        case .profile:
-                            ProfileView(isLoggedIn: $isLoggedIn)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        GeometryReader { geometry in
+            ZStack {
+                backgroundView
                 
-                bottomNavBar
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 12)
-            .zIndex(0)
-            .task {
-                await expenseStore.loadExpenses()
-            }
-            
-            if showMenuOverlay {
-                Color.black.opacity(0.35)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            showMenuOverlay = false
+                VStack(spacing: 0) {
+                    Spacer()
+                   
+                    Group {
+                        if let selectedMenuPage {
+                            switch selectedMenuPage {
+                            case .history:
+                                HistoryView()
+                            case .health:
+                                HealthView()
+                            case .preferences:
+                                PreferencesView()
+                            case .trends:
+                                TrendsView()
+                            case .settings:
+                                SettingsView()
+                            }
+                        } else {
+                            switch selectedTab {
+                            case .home:
+                                DashboardView()
+                            case .menuPlaceholder:
+                                DashboardView()
+                            case .add:
+                                AddExpenseView(selectedTab: $selectedTab)
+                            case .analytics:
+                                AnalyticsView()
+                            case .profile:
+                                ProfileView(isLoggedIn: $isLoggedIn)
+                            }
                         }
                     }
-                    .zIndex(1)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    
+                    bottomNavBar
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 12)
+                .zIndex(0)
+                .task {
+                    await expenseStore.loadExpenses()
+                }
+                
+                if showMenuOverlay {
+                    Color.black.opacity(0.35)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                showMenuOverlay = false
+                            }
+                        }
+                        .zIndex(1)
 
                     menuOverlay
+                        .frame(maxWidth: min(geometry.size.width * 0.68, 320))
                         .zIndex(2)
                         .transition(.move(edge: .leading))
+                }
+            }
         }
     }
 }
 
-}
-
-
 extension MainTabView {
     var backgroundView: some View {
         LinearGradient(
-            colors: [
-                Color(red: 0.05, green: 0.07, blue: 0.15),  // deep navy
-                Color(red: 0.10, green: 0.18, blue: 0.35),  // blue
-                Color(red: 0.12, green: 0.35, blue: 0.40)   // teal hint
-            ],
+            colors: backgroundColors,
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
         .ignoresSafeArea()
+    }
+
+    var backgroundColors: [Color] {
+        if isDarkMode {
+            return [
+                Color(red: 0.05, green: 0.07, blue: 0.15),
+                Color(red: 0.10, green: 0.18, blue: 0.35),
+                Color(red: 0.12, green: 0.35, blue: 0.40)
+            ]
+        }
+
+        return [
+            Color(red: 0.30, green: 0.39, blue: 0.62),
+            Color(red: 0.41, green: 0.58, blue: 0.76),
+            Color(red: 0.43, green: 0.70, blue: 0.72)
+        ]
     }
     
     var menuButton: some View {
@@ -219,6 +237,14 @@ extension MainTabView {
                     selectedMenuPage = .health
                 }
 
+                menuRow(title: "Preferences", systemImage: "slider.horizontal.3") {
+                    selectedMenuPage = .preferences
+                }
+
+                menuRow(title: "Trends", systemImage: "sparkles") {
+                    selectedMenuPage = .trends
+                }
+
                 menuRow(title: "Settings", systemImage: "gearshape") {
                     selectedMenuPage = .settings
                 }
@@ -226,7 +252,6 @@ extension MainTabView {
             Spacer()
         }
         .padding(24)
-        .frame(maxWidth: UIScreen.main.bounds.width * 0.68)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
         .overlay(
@@ -250,9 +275,12 @@ enum AppTab {
 enum MenuPage {
     case history
     case health
+    case preferences
+    case trends
     case settings
 }
 
 #Preview {
     MainTabView(isLoggedIn: .constant(true))
+        .environmentObject(ExpenseStore())
 }
