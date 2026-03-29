@@ -13,8 +13,7 @@ classification_cache = {}
 #----------Configuration----------
 load_dotenv()
 AI_PROVIDER = "snowflake"
-
-
+DEBUG = False
 
 #----------Helper function----------
 
@@ -206,9 +205,10 @@ Output JSON ONLY.
 
     cursor = conn.cursor()
 
-    print("\n=== PROMPT SENT TO SNOWFLAKE ===")
-    print(prompt)
-    print("================================\n")
+    if DEBUG == True:
+        print("\n=== PROMPT SENT TO SNOWFLAKE ===")
+        print(prompt)
+        print("================================\n")
 
     try:
         query = f"""
@@ -217,9 +217,10 @@ Output JSON ONLY.
             '{safe_prompt}'
         );
         """
-        print("\n=== SAFE PROMPT (SQL) ===")
-        print(safe_prompt)
-        print("=========================\n")
+        if DEBUG == True:
+            print("\n=== SAFE PROMPT (SQL) ===")
+            print(safe_prompt)
+            print("=========================\n")
 
         cursor.execute(query)
         row = cursor.fetchone()
@@ -232,7 +233,8 @@ Output JSON ONLY.
         if not result:
             raise ValueError("Empty response from Snowflake")
 
-        print("Snowflake raw response:", result)
+        if DEBUG == True:
+            print("Snowflake raw response:", result)
 
         text = str(result).strip()
 
@@ -244,21 +246,22 @@ Output JSON ONLY.
 
         data = json.loads(text)
 
-        print("\n=== PARSED AI OUTPUT ===")
-        for d in data:
-            print(d)
-        print("========================\n")
+        if DEBUG == True:
+            print("\n=== PARSED AI OUTPUT ===")
+            for d in data:
+                print(d)
+            print("========================\n")
 
-        result_map = {
-            d.get("name", "").lower(): d.get("essential", False)
-            for d in data
-        }
+            result_map = {
+                d.get("name", "").lower(): d.get("essential", False)
+                for d in data
+            }
 
-        print("\n=== FINAL RESULT MAP ===")
-        print(result_map)
-        print("========================\n")
+            print("\n=== FINAL RESULT MAP ===")
+            print(result_map)
+            print("========================\n")
 
-        return result_map
+            return result_map
 
         return {
             d.get("name", "").lower(): d.get("essential", False)
