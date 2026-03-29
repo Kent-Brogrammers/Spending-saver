@@ -9,10 +9,10 @@ import SwiftUI
 
 struct MainTabView: View {
     @Binding var isLoggedIn: Bool
+    @EnvironmentObject var expenseStore: ExpenseStore
     @State private var selectedTab: AppTab = .home
     @State private var showMenuOverlay = false
     @State private var selectedMenuPage: MenuPage? = nil
-    @StateObject private var expenseStore = ExpenseStore()
     
     var body: some View {
         ZStack {
@@ -269,4 +269,5 @@ enum MenuPage {
 
 #Preview {
     MainTabView(isLoggedIn: .constant(true))
+        .environmentObject(ExpenseStore())
 }
