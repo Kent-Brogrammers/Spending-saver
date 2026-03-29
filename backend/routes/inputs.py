@@ -17,7 +17,7 @@ def insertOrders():
     user_id = request.user_id   
 
     query = query = """INSERT INTO orderitems (ID, food_name, cost, order_datetime, category, order_id, dow, FREQUENCY)
-VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRENT_TIMESTAMP(), 'Day', %s))
+VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRENT_TIMESTAMP(), 'Day'), %s)
 """
 
 
