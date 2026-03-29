@@ -53,7 +53,7 @@ class ExpenseStore: ObservableObject {
             )
         }
 
-        let request = InsertFoodRequest(food_name: name, cost: amount, category: category)
+        let request = InsertFoodRequest(name: name, cost: amount, category: category)
         try await authService.insertFood(token: token, requestBody: request)
         await loadExpenses()
     }
@@ -63,7 +63,7 @@ class ExpenseStore: ObservableObject {
             name: dto.food_name ?? dto.name ?? "Unknown Item",
             amount: dto.cost ?? dto.amount ?? 0,
             category: dto.category ?? "Other",
-            createdAt: parseDate(dto.timestamp_column ?? dto.timestamp ?? dto.created_at)
+            createdAt: parseDate(dto.order_datetime ?? dto.timestamp_column ?? dto.timestamp ?? dto.created_at)
         )
     }
 
