@@ -12,28 +12,28 @@ SECRET_KEY = os.getenv("SECRET_KEY")  # for JWT
 @inputsPage.route('/')
 def inputsP():
     print('a')
-    return jsonify("INPUTS")
+    return jsonify("PP")
 
 @inputsPage.route('/insertFood')
 @token_required
 def insertOrders():
     data = request.json
     user_id = request.user_id
-    return jsonify("INPUTS")
+    return
 
 @inputsPage.route('/insertPref')
 @token_required
 def insertPref():
     data = request.json
     user_id = request.user_id
-    return jsonify("INPUTS")
+    return
 
 @inputsPage.route('/removePref')
 @token_required
 def removePref():
     data = request.json
     user_id = request.user_id
-    return jsonify("INPUTS")
+    return
 
 
 @inputsPage.route('/analyze')
