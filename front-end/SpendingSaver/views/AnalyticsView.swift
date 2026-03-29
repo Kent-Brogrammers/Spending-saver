@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct AnalyticsView: View {
-    @ObservedObject var expenseStore: ExpenseStore
+    @EnvironmentObject var expenseStore: ExpenseStore
 
     var totalSpent: Double {
         expenseStore.expenses.reduce(0) { $0 + $1.amount }
@@ -92,5 +92,6 @@ struct AnalyticsView: View {
 }
 
 #Preview {
-    AnalyticsView(expenseStore: ExpenseStore())
+    AnalyticsView()
+        .environmentObject(ExpenseStore())
 }

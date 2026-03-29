@@ -13,7 +13,7 @@ classification_cache = {}
 #----------Configuration----------
 load_dotenv()
 AI_PROVIDER = "snowflake"
-DEBUG = False
+DEBUG = True
 
 #----------Helper function----------
 
@@ -27,7 +27,7 @@ def to_daily(price, frequency):
     elif frequency == "yearly":
         return price / 365
     else: # for one time purchases 
-        return price
+        return 0
 
 #----------Waste Claculator----------
 def waste_calculator(items):
@@ -55,8 +55,8 @@ def waste_calculator(items):
 
 #----------Projections----------
 
-def projections(waste):
-    daily = waste
+def projections(total):
+    daily = total
     weekly = daily * 7
     monthly = weekly * 4
     yearly = weekly * 52
@@ -69,7 +69,7 @@ def projections(waste):
     }
 
 #----------Trends----------
-
+# calculates the change in spending compared to last week
 def calculate_trends(this_week, last_week):
     if last_week == 0:
         return 0
@@ -105,12 +105,19 @@ Your spending is {trend_text}.
 def classify_items(items, preferences_text=""):
     preference_keywords = preferences_text.lower().replace(",", "").split()
     names = [item.get("name", "") for item in items]
+    
 
     cached_result_map = {}
     uncached_names = []
 
-    for name in names:
+    for item in items:
+        name = item.get("name", "")
         key = name.lower()
+
+        if "essential" in item:
+            cached_result_map[key] = item["essential"]
+            continue
+
         if key in classification_cache:
             cached_result_map[key] = classification_cache[key]
         else:
@@ -135,14 +142,18 @@ def classify_items(items, preferences_text=""):
         freq = item.get("frequency", "one-time")
 
         name_lower = name.lower()
-        essential = result_map.get(name_lower, False)
 
-        
-        for keyword in preference_keywords:
-            if keyword in name_lower:
-                essential = True
+        if "essential" in item:
+            essential = item["essential"]
 
-        classification_cache[name.lower()] = essential
+        else:
+            essential = result_map.get(name_lower, False)
+
+            for keyword in preference_keywords:
+                if keyword in name_lower:
+                    essential = True
+
+        classification_cache[name_lower] = essential
 
         classified_items.append({
             "name": name,
@@ -279,6 +290,12 @@ Output JSON ONLY.
 #----------Analyze spending----------
 
 def analyze_spending(items, this_week, last_week, preferences_text=""):
+
+    print("\n=== ITEMS RECEIVED ===")
+    for item in items:
+        print(item)
+    print("=====================\n")
+
     if not items:
         return {
             "total": 0,
@@ -289,7 +306,7 @@ def analyze_spending(items, this_week, last_week, preferences_text=""):
         }
     classified = classify_items(items, preferences_text)
     total, waste, waste_percentage = waste_calculator(classified)
-    proj =  projections(waste)
+    proj =  projections(total)
     trend = calculate_trends(this_week, last_week)
     insight = generate_insight(total, waste, proj, trend)
 

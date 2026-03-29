@@ -18,11 +18,26 @@ struct ExpenseItem: Identifiable {
     let createdAt: Date?
 }
 
+struct Projections: Codable {
+    let daily: Double
+    let weekly: Double
+    let monthly: Double
+    let yearly: Double
+
+    init(daily: Double = 0, weekly: Double = 0, monthly: Double = 0, yearly: Double = 0) {
+        self.daily = daily
+        self.weekly = weekly
+        self.monthly = monthly
+        self.yearly = yearly
+    }
+}
+
 @MainActor
 class ExpenseStore: ObservableObject {
     @Published var expenses: [ExpenseItem] = []
     @Published var isLoading = false
     @Published var errorMessage = ""
+    @Published var projections = Projections()
 
     private let authService = AuthService.shared
 
@@ -40,7 +55,10 @@ class ExpenseStore: ObservableObject {
             expenses = items.map(Self.mapExpense).sorted { lhs, rhs in
                 (lhs.createdAt ?? .distantPast) > (rhs.createdAt ?? .distantPast)
             }
+            await fetchAnalysis()
+
             errorMessage = ""
+
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -100,4 +118,32 @@ class ExpenseStore: ObservableObject {
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
         return formatter.date(from: value)
     }
+    
+    func fetchAnalysis() async {
+        guard let token = UserDefaults.standard.string(forKey: "authToken"),
+              let url = URL(string: "\(authService.baseURL)/inputs/analyze") else {
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            print("RAW ANALYZE RESPONSE:", String(data: data, encoding: .utf8) ?? "")
+
+            let decoded = try JSONDecoder().decode(AnalysisResponse.self, from: data)
+
+            print("DECODED PROJECTIONS:", decoded.projections)
+
+            self.projections = decoded.projections
+
+        } catch {
+            print("Analyze failed:", error)
+        }
+    }
 }
+
+
