@@ -11,7 +11,7 @@ final class AuthService {
     static let shared = AuthService()
     private init() {}
 
-    let baseURL = "http://127.0.0.1:5000"
+    let baseURL = "http://10.14.98.21:5000"
 
     func login(username: String, password: String) async throws -> LoginResponse {
         guard let url = URL(string: "\(baseURL)/login/login") else {
@@ -30,7 +30,9 @@ final class AuthService {
         }
 
         if (200...299).contains(httpResponse.statusCode) {
-            return try JSONDecoder().decode(LoginResponse.self, from: data)
+            let result = try JSONDecoder().decode(LoginResponse.self, from: data)
+            UserDefaults.standard.set(result.token, forKey: "authToken")
+            return result
         } else {
             let apiError = try? JSONDecoder().decode(ErrorResponse.self, from: data)
             throw NSError(
