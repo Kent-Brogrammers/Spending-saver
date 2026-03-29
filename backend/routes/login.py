@@ -61,10 +61,11 @@ def loginAccount():
     # Fetch hashed password from DB
     result = get_connection(
         db="Users",
-        query="SELECT id, password FROM Users WHERE username = %s",
+        query="SELECT ID, PASSWORD FROM Users.PUBLIC.Users WHERE USERNAME = %s",
         fetch_one=True,
         params=(username,)
     )
+
 
     if not result:
         return jsonify({"error": "User not found"}), 404

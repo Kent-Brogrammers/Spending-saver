@@ -9,14 +9,15 @@ inputsPage = Blueprint("inputsPage", __name__, url_prefix="/inputs")
 
 SECRET_KEY = os.getenv("SECRET_KEY")  # for JWT
 
+#
 @inputsPage.route('/insertFood', methods=['POST'])
 @token_required
 def insertOrders():
     data = request.json
-    user_id = request.user_id
+    user_id = request.user_id   
 
     query = query = """
-INSERT INTO orderitems (user_id, food_name, cost, order_datetime, category, order_id, dow)
+INSERT INTO orderitems (ID, food_name, cost, order_datetime, category, order_id, dow)
 VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRENT_TIMESTAMP(), 'Day'))
 """
 
