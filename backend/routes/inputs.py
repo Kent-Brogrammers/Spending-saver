@@ -17,8 +17,13 @@ def insertOrders():
     user_id = request.user_id   
 
     query = query = """
+<<<<<<< HEAD
 INSERT INTO orderitems (ID, food_name, cost, order_datetime, category, order_id, dow, FREQUENCY)
 VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRENT_TIMESTAMP(), 'Day', %s))
+=======
+INSERT INTO orderitems (ID, food_name, cost, order_datetime, category, order_id, dow)
+VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRENT_TIMESTAMP(), 'Day'))
+>>>>>>> refs/remotes/origin/front-end
 """
 
     params = [user_id, data.get("Name"), data.get("Cost"), data.get("Category"), data.get("Frequency")]
