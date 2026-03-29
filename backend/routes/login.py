@@ -31,7 +31,7 @@ def createAccount():
     # Check if user exists
     result = get_connection(
         db="Users",
-        query="SELECT COUNT(*) FROM Users WHERE username = %s",
+        query="SELECT COUNT(*) FROM Users.PUBLIC.Users WHERE username = %s",
         fetch_one=True,
         params=(username,)  # parameterized query
     )
@@ -47,7 +47,7 @@ def createAccount():
     # Insert new user
     get_connection(
         db="Users",
-        query="INSERT INTO Users (full_name, username, password) VALUES (%s, %s, %s)",
+        query="INSERT INTO Users.PUBLIC.Users (full_name, username, password) VALUES (%s, %s, %s)",
         params=(full_name, username, hashed_password),
         commit=True
     )
