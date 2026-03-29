@@ -8,10 +8,12 @@
 import SwiftUI
 
 struct HomeView: View {
+    @AppStorage("displayName") private var displayName = ""
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Hello \(UserDefaults.standard.string(forKey: "username") ?? "User")")
+                Text("Hello \(currentDisplayName)")
                     .font(.system(size: 34, weight: .bold))
                     .foregroundColor(.white)
                 
@@ -62,6 +64,14 @@ struct HomeView: View {
         .padding()
         .background(Color.white.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    var currentDisplayName: String {
+        if !displayName.isEmpty {
+            return displayName
+        }
+
+        return UserDefaults.standard.string(forKey: "username") ?? "User"
     }
 }
 

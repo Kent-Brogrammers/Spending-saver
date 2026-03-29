@@ -17,6 +17,7 @@ struct AddExpenseView: View {
     @State private var frequency = "One Time"
     @State private var isEssential = false
     @State private var isSaving = false
+    @State private var statusMessage = ""
     @State private var errorMessage = ""
     
     let categories = ["Groceries", "Gas", "Coffee", "Shopping", "Other"]
@@ -37,6 +38,9 @@ struct AddExpenseView: View {
                     .background(Color.white.opacity(0.10))
                     .foregroundColor(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .onChange(of: name) {
+                        statusMessage = ""
+                    }
                 
                 TextField("", text: $amount, prompt: Text("$0.00").foregroundColor(.white.opacity(0.65)))
                     .padding()
@@ -44,6 +48,9 @@ struct AddExpenseView: View {
                     .foregroundColor(.white)
                     .keyboardType(.decimalPad)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .onChange(of: amount) {
+                        statusMessage = ""
+                    }
                 
                 Picker("Category", selection: $category) {
                     ForEach(categories, id: \.self) { cat in
@@ -85,6 +92,8 @@ struct AddExpenseView: View {
                     Button("Cancel") {
                         name = ""
                         amount = ""
+                        errorMessage = ""
+                        statusMessage = ""
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -111,6 +120,12 @@ struct AddExpenseView: View {
                     .disabled(isSaving)
                 }
 
+                if !statusMessage.isEmpty {
+                    Text(statusMessage)
+                        .font(.footnote)
+                        .foregroundColor(.green.opacity(0.9))
+                }
+
                 if !errorMessage.isEmpty {
                     Text(errorMessage)
                         .font(.footnote)
@@ -129,21 +144,33 @@ struct AddExpenseView: View {
         }
     }
     func addExpense() async {
-        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        guard let amountValue = Double(amount) else { return }
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedName.isEmpty else {
+            errorMessage = "Enter a name for the expense."
+            statusMessage = ""
+            return
+        }
+
+        guard let amountValue = Double(amount), amountValue > 0 else {
+            errorMessage = "Enter a valid amount greater than zero."
+            statusMessage = ""
+            return
+        }
 
         isSaving = true
         defer { isSaving = false }
 
         do {
             try await expenseStore.addExpense(
-                name: name,
+                name: trimmedName,
                 amount: amountValue,
                 category: category,
                 frequency: frequency,
                 isEssential: isEssential
             )
             errorMessage = ""
+            statusMessage = "\(trimmedName) was added successfully."
             name = ""
             amount = ""
             category = "Groceries"
@@ -151,6 +178,7 @@ struct AddExpenseView: View {
             isEssential = false
             selectedTab = .home
         } catch {
+            statusMessage = ""
             errorMessage = error.localizedDescription
         }
     }

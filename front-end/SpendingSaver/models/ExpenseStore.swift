@@ -40,6 +40,12 @@ class ExpenseStore: ObservableObject {
     @Published var projections = Projections()
 
     private let authService = AuthService.shared
+    private var essentialOverrides: [Int: Bool]
+
+    init() {
+        essentialOverrides = [:]
+        essentialOverrides = loadEssentialOverrides()
+    }
 
     func loadExpenses() async {
         guard let token = UserDefaults.standard.string(forKey: "authToken"), !token.isEmpty else {
@@ -52,7 +58,7 @@ class ExpenseStore: ObservableObject {
 
         do {
             let items = try await authService.fetchItems(token: token)
-            expenses = items.map(Self.mapExpense).sorted { lhs, rhs in
+            expenses = items.map(mapExpense).sorted { lhs, rhs in
                 (lhs.createdAt ?? .distantPast) > (rhs.createdAt ?? .distantPast)
             }
             await fetchAnalysis()
@@ -76,17 +82,40 @@ class ExpenseStore: ObservableObject {
         let request = InsertFoodRequest(name: name, cost: amount, category: category, frequency: frequency)
         try await authService.insertFood(token: token, requestBody: request)
         await loadExpenses()
+        applyEssentialOverride(
+            name: name,
+            amount: amount,
+            category: category,
+            isEssential: isEssential
+        )
     }
 
-    private static func mapExpense(_ dto: ExpenseDTO) -> ExpenseItem {
-        ExpenseItem(
-            id: dto.order_id ?? 0,
+    func deleteExpense(_ item: ExpenseItem) async throws {
+        guard let token = UserDefaults.standard.string(forKey: "authToken"), !token.isEmpty else {
+            throw NSError(
+                domain: "",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Missing auth token."]
+            )
+        }
+
+        try await authService.deleteFood(token: token, orderID: item.id)
+        removeEssentialOverride(for: item.id)
+        expenses.removeAll { $0.id == item.id }
+        await fetchAnalysis()
+    }
+
+    private func mapExpense(_ dto: ExpenseDTO) -> ExpenseItem {
+        let orderID = dto.order_id ?? 0
+
+        return ExpenseItem(
+            id: orderID,
             name: dto.food_name ?? dto.name ?? "Unknown Item",
             amount: dto.cost ?? dto.amount ?? 0,
             category: dto.category ?? "Other",
-            frequency: dto.frequency ?? "one-time",
-            isEssential: isEssentialCategory(dto.category),
-            createdAt: parseDate(dto.order_datetime ?? dto.timestamp_column ?? dto.timestamp ?? dto.created_at)
+            frequency: "one-time",
+            isEssential: dto.is_essential ?? dto.essential ?? essentialOverrides[orderID] ?? Self.isEssentialCategory(dto.category),
+            createdAt: Self.parseDate(dto.order_datetime ?? dto.timestamp_column ?? dto.timestamp ?? dto.created_at)
         )
     }
 
@@ -105,6 +134,12 @@ class ExpenseStore: ObservableObject {
         }
 
         let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = isoFormatter.date(from: value) {
+            return date
+        }
+
+        isoFormatter.formatOptions = [.withInternetDateTime]
         if let date = isoFormatter.date(from: value) {
             return date
         }
@@ -117,6 +152,16 @@ class ExpenseStore: ObservableObject {
         }
 
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        if let date = formatter.date(from: value) {
+            return date
+        }
+
+        formatter.dateFormat = "yyyy-MM-dd"
+        if let date = formatter.date(from: value) {
+            return date
+        }
+
+        formatter.dateFormat = "MM/dd/yyyy"
         return formatter.date(from: value)
     }
     
@@ -131,7 +176,7 @@ class ExpenseStore: ObservableObject {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, _) = try await URLSession.shared.data(for: request)
 
             print("RAW ANALYZE RESPONSE:", String(data: data, encoding: .utf8) ?? "")
 
@@ -145,6 +190,55 @@ class ExpenseStore: ObservableObject {
             print("Analyze failed:", error)
         }
     }
+
+    private func applyEssentialOverride(name: String, amount: Double, category: String, isEssential: Bool) {
+        guard let matchIndex = expenses.firstIndex(where: { expense in
+            expense.name.caseInsensitiveCompare(name) == .orderedSame &&
+            expense.category == category &&
+            abs(expense.amount - amount) < 0.001
+        }) else {
+            return
+        }
+
+        let matchedExpense = expenses[matchIndex]
+        essentialOverrides[matchedExpense.id] = isEssential
+        saveEssentialOverrides()
+
+        expenses[matchIndex] = ExpenseItem(
+            id: matchedExpense.id,
+            name: matchedExpense.name,
+            amount: matchedExpense.amount,
+            category: matchedExpense.category,
+            frequency: matchedExpense.frequency,
+            isEssential: isEssential,
+            createdAt: matchedExpense.createdAt
+        )
+    }
+
+    private func removeEssentialOverride(for orderID: Int) {
+        essentialOverrides.removeValue(forKey: orderID)
+        saveEssentialOverrides()
+    }
+
+    private func loadEssentialOverrides() -> [Int: Bool] {
+        guard let data = UserDefaults.standard.data(forKey: essentialOverridesKey),
+              let decoded = try? JSONDecoder().decode([Int: Bool].self, from: data) else {
+            return [:]
+        }
+
+        return decoded
+    }
+
+    private func saveEssentialOverrides() {
+        guard let data = try? JSONEncoder().encode(essentialOverrides) else {
+            return
+        }
+
+        UserDefaults.standard.set(data, forKey: essentialOverridesKey)
+    }
+
+    private var essentialOverridesKey: String {
+        let userID = UserDefaults.standard.integer(forKey: "userID")
+        return "essentialOverrides_\(userID)"
+    }
 }
-
-

@@ -9,6 +9,126 @@ import SwiftUI
 
 struct HealthView: View {
     @EnvironmentObject var expenseStore: ExpenseStore
+
+    private var allExpenses: [ExpenseItem] {
+        expenseStore.expenses
+    }
+
+    private var convenienceExpenses: [ExpenseItem] {
+        allExpenses.filter {
+            ["Coffee", "Fast Food", "Shopping"].contains($0.category)
+        }
+    }
+
+    private var essentialExpenses: [ExpenseItem] {
+        allExpenses.filter(\.isEssential)
+    }
+
+    private var convenienceTotal: Double {
+        convenienceExpenses.reduce(0) { $0 + $1.amount }
+    }
+
+    private var essentialTotal: Double {
+        essentialExpenses.reduce(0) { $0 + $1.amount }
+    }
+
+    private var totalSpent: Double {
+        allExpenses.reduce(0) { $0 + $1.amount }
+    }
+
+    private var topConvenienceCategory: String? {
+        let grouped = Dictionary(grouping: convenienceExpenses, by: \.category)
+        return grouped.max { $0.value.count < $1.value.count }?.key
+    }
+
+    private var healthHeadline: String {
+        if allExpenses.isEmpty {
+            return "Your wellness snapshot will show up here"
+        }
+
+        if convenienceTotal == 0 {
+            return "Your spending habits look fairly balanced"
+        }
+
+        if convenienceExpenses.count <= 2 {
+            return "A few small swaps could improve your routine"
+        }
+
+        return "Your convenience spending may be creeping up"
+    }
+
+    private var healthSummary: String {
+        if allExpenses.isEmpty {
+            return "As you log food, coffee, and convenience purchases, this screen will turn your spending into simple wellness insights."
+        }
+
+        if let topConvenienceCategory {
+            return "\(topConvenienceCategory) is showing up the most in your convenience spending, which makes this a good habit to watch."
+        }
+
+        return "Most of your current spending is landing in essential categories, which usually points to a steadier routine."
+    }
+
+    private var healthConcerns: [(String, String, String)] {
+        var concerns: [(String, String, String)] = []
+
+        if convenienceExpenses.contains(where: { $0.category == "Coffee" }) {
+            concerns.append((
+                "cup.and.saucer.fill",
+                "Coffee runs are adding up",
+                "Frequent coffee purchases can point to stress-driven spending and a more expensive daily routine."
+            ))
+        }
+
+        if convenienceExpenses.contains(where: { $0.category == "Fast Food" }) {
+            concerns.append((
+                "fork.knife",
+                "Grab-and-go meals are showing up",
+                "That can be a sign of rushed days, convenience eating, and higher sodium spending patterns."
+            ))
+        }
+
+        if convenienceExpenses.count >= 3 {
+            concerns.append((
+                "bolt.fill",
+                "Impulse spending may be part of the pattern",
+                "Repeated small purchases often feel harmless, but they can quietly become a daily habit."
+            ))
+        }
+
+        if concerns.isEmpty {
+            concerns.append((
+                "heart.fill",
+                "No strong risk signals yet",
+                "Your current spending pattern does not show a major convenience-spending spike."
+            ))
+        }
+
+        return concerns
+    }
+
+    private var suggestionList: [String] {
+        var suggestions: [String] = []
+
+        if convenienceExpenses.contains(where: { $0.category == "Coffee" }) {
+            suggestions.append("Pick 2 mornings this week to make coffee at home and compare the savings.")
+        }
+
+        if convenienceExpenses.contains(where: { $0.category == "Fast Food" }) {
+            suggestions.append("Plan one quick backup meal so convenience food is not the default choice.")
+        }
+
+        if convenienceTotal > essentialTotal && totalSpent > 0 {
+            suggestions.append("Your flexible spending is ahead of essentials right now. Try setting one simple weekly cap.")
+        }
+
+        if suggestions.isEmpty {
+            suggestions.append("Keep logging consistently so this page can spot stronger patterns over time.")
+            suggestions.append("Use the Trends page alongside this one to compare financial habits month to month.")
+        }
+
+        return suggestions
+    }
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -18,25 +138,17 @@ struct HealthView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 20)
-                
-                infoCard(
-                    title: "Habit Summary",
-                    body: "Your recent spending suggests frequent purchases of convenience drinks and fast grab-and-go items."
-                )
-                
-                infoCard(
-                    title: "AI Insight",
-                    body: "Repeated coffee and sugary drink purchases may point to a daily caffeine and added sugar habit. Over time, this can affect sleep quality, energy crashes, and overall health."
-                )
-                
+
+                summaryCard
+
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Potential Health Concerns")
+                    Text("What We Noticed")
                         .font(.headline)
                         .foregroundColor(.white)
                     
-                    healthRiskRow(icon: "cup.and.saucer.fill", title: "Sugary Coffee", detail: "May increase daily sugar intake")
-                    healthRiskRow(icon: "bolt.fill", title: "High Caffeine", detail: "Can affect sleep and stress levels")
-                    healthRiskRow(icon: "fork.knife", title: "Convenience Food", detail: "May mean more sodium and processed foods")
+                    ForEach(healthConcerns, id: \.1) { concern in
+                        healthRiskRow(icon: concern.0, title: concern.1, detail: concern.2)
+                    }
                 }
                 .padding(20)
                 .background(.ultraThinMaterial)
@@ -47,13 +159,13 @@ struct HealthView: View {
                 )
                 
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Better Alternatives")
+                    Text("Easy Wins")
                         .font(.headline)
                         .foregroundColor(.white)
                     
-                    suggestionRow("Try making coffee at home 2–3 days a week")
-                    suggestionRow("Swap one sugary drink for water or unsweetened tea")
-                    suggestionRow("Set a weekly limit for convenience purchases")
+                    ForEach(suggestionList, id: \.self) { suggestion in
+                        suggestionRow(suggestion)
+                    }
                 }
                 .padding(20)
                 .background(.ultraThinMaterial)
@@ -68,16 +180,20 @@ struct HealthView: View {
             .padding(.bottom, 20)
         }
     }
-    
-    func infoCard(title: String, body: String) -> some View {
+
+    var summaryCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.headline)
+            Text(healthHeadline)
+                .font(.system(size: 30, weight: .bold))
                 .foregroundColor(.white)
-            
-            Text(body)
+
+            Text(healthSummary)
                 .foregroundColor(.white.opacity(0.82))
                 .font(.subheadline)
+
+            Text("This page focuses on habits and behavior, not detailed stats.")
+                .font(.footnote)
+                .foregroundColor(.cyan.opacity(0.9))
         }
         .padding(20)
         .background(.ultraThinMaterial)
@@ -87,7 +203,7 @@ struct HealthView: View {
                 .stroke(Color.white.opacity(0.15), lineWidth: 1)
         )
     }
-    
+
     func healthRiskRow(icon: String, title: String, detail: String) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: icon)
@@ -123,6 +239,10 @@ struct HealthView: View {
             Spacer()
         }
         .padding(.vertical, 4)
+    }
+
+    func currencyString(_ amount: Double) -> String {
+        amount.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
     }
 }
 

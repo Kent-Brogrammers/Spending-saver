@@ -65,6 +65,8 @@ struct ExpenseDTO: Codable {
     let cost: Double?
     let amount: Double?
     let category: String?
+    let is_essential: Bool?
+    let essential: Bool?
     let order_datetime: String?
     let timestamp_column: String?
     let timestamp: String?

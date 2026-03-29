@@ -31,7 +31,6 @@ final class AuthService {
 
         if (200...299).contains(httpResponse.statusCode) {
             let result = try JSONDecoder().decode(LoginResponse.self, from: data)
-            UserDefaults.standard.set(result.token, forKey: "authToken")
             return result
         } else {
             let apiError = try? JSONDecoder().decode(ErrorResponse.self, from: data)
@@ -200,6 +199,27 @@ final class AuthService {
             throw NSError(domain: "", code: httpResponse.statusCode, userInfo: [
                 NSLocalizedDescriptionKey: "Analyze request failed"
             ])
+        }
+    }
+    
+    func deleteFood(token: String, orderID: Int) async throws {
+        guard let url = URL(string: "\(baseURL)/inputs/deleteFood") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let body = DeleteFoodRequest(orderID: orderID)
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
         }
     }
 }

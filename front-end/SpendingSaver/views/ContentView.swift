@@ -9,6 +9,7 @@ import SwiftUI
 
 
 struct ContentView: View {
+    @AppStorage("isDarkMode") private var isDarkMode = true
     @State private var isLoggedIn = {
         let remember = UserDefaults.standard.bool(forKey: "rememberMe")
         let token = UserDefaults.standard.string(forKey: "authToken")
@@ -18,13 +19,16 @@ struct ContentView: View {
     @StateObject var expenseStore = ExpenseStore()
     
     var body: some View {
-        if isLoggedIn {
-            MainTabView(isLoggedIn: $isLoggedIn)
-                .environmentObject(expenseStore)
-        } else {
-            LoginView(isLoggedIn: $isLoggedIn)
-                .environmentObject(expenseStore)
+        Group {
+            if isLoggedIn {
+                MainTabView(isLoggedIn: $isLoggedIn)
+                    .environmentObject(expenseStore)
+            } else {
+                LoginView(isLoggedIn: $isLoggedIn)
+                    .environmentObject(expenseStore)
+            }
         }
+        .preferredColorScheme(isDarkMode ? .dark : .light)
     }
 }
 
