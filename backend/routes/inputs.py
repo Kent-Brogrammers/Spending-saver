@@ -124,6 +124,26 @@ def changePref():
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
+@inputsPage.route('/changeName', methods=['POST'])
+@token_required
+def changeName():
+    data = request.json
+    user_id = request.user_id
+    full_name = data.get("full_name")
+
+    if not full_name:
+        return jsonify({"error": "Full name is required"}), 400
+
+    query = "UPDATE Users.PUBLIC.Users SET FULL_NAME = %s WHERE ID = %s"
+    params = [full_name, user_id]
+
+    try:
+        get_connection("Users", query=query, params=params, commit=True)
+        return jsonify({"message": "Name updated successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
 
 @inputsPage.route('/analyze', methods=['POST'])
 @token_required
