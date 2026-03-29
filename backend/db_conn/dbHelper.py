@@ -2,7 +2,10 @@ import os
 import snowflake.connector
 
 
-def get_connection(db, query=None, fetch_one=False, params=None):
+import os
+import snowflake.connector
+
+def get_connection(db, query=None, fetch_one=False, params=None, commit=False):
     conn = snowflake.connector.connect(
         user=os.getenv("SW_USER"),
         password=os.getenv("SW_PASS"),
@@ -11,13 +14,19 @@ def get_connection(db, query=None, fetch_one=False, params=None):
         database=db,
         schema=os.getenv("SW_SCHEMA")
     )
-
     if query:
         cur = conn.cursor()
         if params:
             cur.execute(query, params)
         else:
             cur.execute(query)
+        
+        if commit:
+            conn.commit()
+            cur.close()
+            conn.close()
+            return None
+        
         result = cur.fetchone() if fetch_one else cur.fetchall()
         cur.close()
         conn.close()

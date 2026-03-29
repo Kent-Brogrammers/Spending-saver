@@ -29,7 +29,8 @@ def createAccount():
         db="Users",
         query="SELECT COUNT(*) FROM Users WHERE username = %s",
         fetch_one=True,
-        params=(username,)  # parameterized query
+        params=(username,),  # parameterized query
+        commit=True
     )
 
     if result[0] > 0:

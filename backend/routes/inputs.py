@@ -17,14 +17,14 @@ def insertOrders():
     user_id = request.user_id   
 
     query = query = """
-INSERT INTO orderitems (ID, food_name, cost, order_datetime, category, order_id, dow)
-VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRENT_TIMESTAMP(), 'Day'))
+INSERT INTO orderitems (ID, food_name, cost, order_datetime, category, order_id, dow, FREQUENCY)
+VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRENT_TIMESTAMP(), 'Day', %s))
 """
 
-    params = [user_id, data.get("Name"), data.get("Cost"), data.get("Category")]
+    params = [user_id, data.get("Name"), data.get("Cost"), data.get("Category"), data.get("Frequency")]
 
     try:
-        get_connection("ITEMS_DB", query=query, params=params)
+        get_connection("ITEMS_DB", query=query, params=params, commit=True)
         return jsonify({"message": "Order inserted successfully!"}), 201
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
@@ -43,7 +43,7 @@ def deleteOrder():
     params = [order_id, user_id,]
 
     try:
-        get_connection("ITEMS_DB", query=query, params=params)
+        get_connection("ITEMS_DB", query=query, params=params, commit=True)
         return jsonify({"message": "Order deleted successfully!"}), 200
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
@@ -70,7 +70,7 @@ def insertPref():
 
     try:
         # Insert the food preference into the database
-        get_connection("Users", query=query, params=params)
+        get_connection("Users", query=query, params=params, commit=True)
         return jsonify({"message": f"Food preference '{food_name}' added for user {user_id}."}), 201
     except Exception as e:
         # Handle any errors
@@ -99,7 +99,7 @@ def removePref():
 
     try:
         # Perform the delete operation
-        get_connection("Users", query=query, params=params)
+        get_connection("Users", query=query, params=params, commit=True)
         return jsonify({"message": f"Food preference '{food_name}' removed for user {user_id}."}), 200
     except Exception as e:
         # Handle any errors
