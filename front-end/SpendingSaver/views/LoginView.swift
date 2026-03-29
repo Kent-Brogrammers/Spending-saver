@@ -9,7 +9,9 @@
 import SwiftUI
 
 struct LoginView: View {
+    @State private var rememberMe = false
     @Binding var isLoggedIn: Bool
+    @EnvironmentObject var expenseStore: ExpenseStore
     @State private var username = ""
     @State private var password = ""
     @State private var showCreateAccount = false
@@ -67,6 +69,10 @@ extension LoginView {
                         .foregroundColor(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .tint(.white)
+                    
+                    Toggle("Remember Me", isOn: $rememberMe)
+                        .toggleStyle(SwitchToggleStyle(tint: .blue))
+                        .foregroundColor(.white)
                     
                     Button(action: {
                         Task {
@@ -143,17 +149,26 @@ extension LoginView {
         do {
             let result = try await AuthService.shared.login(username: username, password: password)
 
-            UserDefaults.standard.set(result.token, forKey: "authToken")
+            if rememberMe {
+                UserDefaults.standard.set(result.token, forKey: "authToken")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "authToken")
+            }
+            UserDefaults.standard.set(rememberMe, forKey: "rememberMe")
             UserDefaults.standard.set(result.user_id, forKey: "userID")
             UserDefaults.standard.set(username, forKey: "username")
 
+            
+            await expenseStore.loadExpenses()
+
             isLoggedIn = true
+
         } catch {
             errorMessage = error.localizedDescription
-        }
-    }
+        }    }
 }
 
 #Preview {
     LoginView(isLoggedIn: .constant(false))
+        .environmentObject(ExpenseStore())
 }

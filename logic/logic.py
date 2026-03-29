@@ -13,7 +13,7 @@ classification_cache = {}
 #----------Configuration----------
 load_dotenv()
 AI_PROVIDER = "snowflake"
-DEBUG = True
+DEBUG = False
 
 #----------Helper function----------
 
@@ -291,10 +291,11 @@ Output JSON ONLY.
 
 def analyze_spending(items, this_week, last_week, preferences_text=""):
 
-    print("\n=== ITEMS RECEIVED ===")
-    for item in items:
-        print(item)
-    print("=====================\n")
+    if DEBUG == True:
+        print("\n=== ITEMS RECEIVED ===")
+        for item in items:
+            print(item)
+        print("=====================\n")
 
     if not items:
         return {
