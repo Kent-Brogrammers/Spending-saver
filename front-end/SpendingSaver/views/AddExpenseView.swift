@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct AddExpenseView: View {
+    @ObservedObject var expenseStore: ExpenseStore
+    @Binding var selectedTab: AppTab
+    
     @State private var name = ""
     @State private var amount = ""
     @State private var category = "Groceries"
@@ -60,6 +63,7 @@ struct AddExpenseView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     
                     Button("Add Expense") {
+                        addExpense()
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -85,8 +89,22 @@ struct AddExpenseView: View {
             Spacer()
         }
     }
+    func addExpense() {
+        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        guard let amountValue = Double(amount) else { return }
+        
+        expenseStore.addExpense(name: name, amount: amountValue, category: category)
+        
+        name = ""
+        amount = ""
+        category = "Groceries"
+        
+        selectedTab = .home
+        
+        
+    }
 }
 
 #Preview {
-    AddExpenseView()
+    AddExpenseView(expenseStore: ExpenseStore(), selectedTab: .constant(.add))
 }

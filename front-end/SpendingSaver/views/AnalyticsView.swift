@@ -8,6 +8,12 @@
 import SwiftUI
 
 struct AnalyticsView: View {
+    @ObservedObject var expenseStore: ExpenseStore
+
+    var totalSpent: Double {
+        expenseStore.expenses.reduce(0) { $0 + $1.amount}
+    }
+    
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
@@ -77,5 +83,5 @@ struct AnalyticsView: View {
 }
 
 #Preview {
-    AnalyticsView()
+    AnalyticsView(expenseStore: ExpenseStore())
 }
