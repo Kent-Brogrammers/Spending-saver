@@ -18,33 +18,39 @@ USE_GEMINI = True
 DEBUG_GEMINI = True
 
 
-#----------Test data----------
-items = [
-    {"name": "Starbucks Latte", "price": 6.25},
-    {"name": "Groceries", "price": 54.30},
-    {"name": "Uber Ride", "price": 18.50},
-    {"name": "Netflix Subscription", "price": 15.99},
-    {"name": "Chicken Breast", "price": 12.40},
-    {"name": "Gym Membership", "price": 30.00},
-    {"name": "DoorDash Order", "price": 22.75},
-    {"name": "Gas", "price": 40.00},
-    {"name": "Protein Powder", "price": 35.99},
-    {"name": "Concert Ticket", "price": 120.00},
-    {"name": "Water Bottle", "price": 2.00},
-    {"name": "New Shoes", "price": 85.00}
-]
+#----------Helper function----------
 
-
+def to_daily(price, frequency):
+    if frequency == "daily":
+        return price
+    elif frequency == "weekly":
+        return price / 7
+    elif frequency == "monthly":
+        return price / 30
+    elif frequency == "yearly":
+        return price / 365
+    else: # for one time purchases 
+        return price / 30
 
 #----------Waste Claculator----------
 def waste_calculator(items):
     waste = 0.0
     total = 0.0
-    waste_percentage = 0.0
+
     for item in items:
-        total += item["price"]
+        price = float(item.get("price", 0))
+        freq = item.get("frequency", "one-time")
+
+        valid_freqs = {"daily", "weekly", "monthly", "yearly", "one-time"}
+        if freq not in valid_freqs:
+            freq = "one-time"
+
+        daily_value = to_daily(price, freq)
+
+        total += daily_value
+
         if item["essential"] is False:
-            waste += item["price"]
+            waste += daily_value
 
     waste_percentage = round((waste / total) * 100, 2) if total > 0 else 0
         
@@ -59,10 +65,10 @@ def projections(waste):
     yearly = weekly * 52
 
     return {
-        "daily": daily,
-        "weekly": weekly,
-        "monthly": monthly,
-        "yearly": yearly
+        "daily": round(daily, 2),
+        "weekly": round(weekly, 2),
+        "monthly": round(monthly, 2),
+        "yearly": round(yearly, 2)
     }
 
 #----------Trends----------
@@ -89,7 +95,7 @@ You spent ${total:.2f} total, with ${waste:.2f} on non-essential items.
 
 At this rate, that's ${yearly:.2f} per year.
 
-That could be equal to:
+That could be:
 {yearly / 1500:.1f} vacations
 {yearly / 1200:.1f} laptops
 
@@ -99,7 +105,7 @@ Your spending is {trend_text}.
 
 #----------Gemini Classifier----------
 
-def classify_items(items):
+def classify_items(items, preferences_text=""):
     names = [item.get("name", "") for item in items]
 
     cached_result_map = {}
@@ -115,17 +121,18 @@ def classify_items(items):
     prompt = f"""
 Classify each item as essential or non-essential.
 
+User preferences:
+{preferences_text}
+
 Items:
 {uncached_names}
 
-Return STRICT JSON in this format:
+Return STRICT JSON:
 [
   {{"name": "<item>", "essential": true/false}}
 ]
 
-Use the SAME item names provided.
-
-No explanation. No markdown. No extra text.
+No explanation.
 """
 
     if not USE_GEMINI:
@@ -141,6 +148,12 @@ No explanation. No markdown. No extra text.
                 contents=prompt
             )
             text = response.text.strip()
+
+            
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                text = text.replace("json", "", 1).strip()  
+                text = text.rsplit("```", 1)[0].strip()
 
 
             if DEBUG_GEMINI:
@@ -164,13 +177,14 @@ No explanation. No markdown. No extra text.
 
         except Exception as e:
             print("Gemini Error:", e)
-            result_map.update(cached_result_map)
+            result_map = cached_result_map.copy()
 
     classified_items = []
 
     for item in items:
         name = item.get("name", "")
         price = item.get("price", 0)
+        freq = item.get("frequency", "one-time")
 
         essential = result_map.get(name.lower(), False)
 
@@ -180,6 +194,7 @@ No explanation. No markdown. No extra text.
         classified_items.append({
             "name": name,
             "price": price,
+            "frequency": freq,
             "essential": essential
         })
 
@@ -187,7 +202,7 @@ No explanation. No markdown. No extra text.
 
 #----------Analyze spending----------
 
-def analyze_spending(items, this_week, last_week):
+def analyze_spending(items, this_week, last_week, preferences_text=""):
     if not items:
         return {
             "total": 0,
@@ -196,7 +211,7 @@ def analyze_spending(items, this_week, last_week):
             "trend": 0,
             "insight": "No spending data available."
         }
-    classified = classify_items(items)
+    classified = classify_items(items, preferences_text)
     total, waste, waste_percentage = waste_calculator(classified)
     proj =  projections(waste)
     trend = calculate_trends(this_week, last_week)
@@ -211,21 +226,13 @@ def analyze_spending(items, this_week, last_week):
         "insight": insight
     }
 
-#----------Testing----------
+#----------Process Request----------
 
-if __name__ == "__main__":
-    stats = analyze_spending(items, 120, 98)
+def process_request(data):
+    items = data.get("items", [])
+    this_week = float(data.get("this_week", 0))
+    last_week = float(data.get("last_week", 0))
+    preferences_text = data.get("preferences_text", "")
 
-    print("\n=== Spending Analysis ===")
-    print(f"Total: ${stats['total']}")
-    print(f"Waste: ${stats['waste']}")
-    print(f"Trend: {stats['trend']}%")
-    print(f"Waste percentage: {stats['waste_percentage']}%")
-    print(stats["projections"])
-    print("\nInsight:\n")
-    print(stats["insight"])
+    return analyze_spending(items, this_week, last_week, preferences_text)
 
-    # Backend output
-    print("\n=== API Response ===")
-    print(json.dumps(stats, indent=2))
-    
