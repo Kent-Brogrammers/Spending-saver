@@ -9,11 +9,6 @@ inputsPage = Blueprint("inputsPage", __name__, url_prefix="/inputs")
 
 SECRET_KEY = os.getenv("SECRET_KEY")  # for JWT
 
-@inputsPage.route('/')
-def inputsP():
-    return jsonify("PP")
-
-
 @inputsPage.route('/insertFood', methods=['POST'])
 @token_required
 def insertOrders():
@@ -33,6 +28,25 @@ VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRE
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
     
+@inputsPage.route('/deleteFood', methods=['DELETE'])
+@token_required
+def deleteOrder():
+    data = request.json
+    user_id = request.user_id
+    order_id = data.get("ORDER_ID")
+
+    if not order_id:
+        return jsonify({"error": "order_id is required"}), 400
+
+    query = "DELETE FROM orderitems WHERE order_id = %s AND ID = %s"
+    params = [order_id, user_id,]
+
+    try:
+        get_connection("ITEMS_DB", query=query, params=params)
+        return jsonify({"message": "Order deleted successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 # Insert a food preference
 @inputsPage.route('/insertPref', methods=['POST'])
 @token_required

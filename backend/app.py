@@ -9,6 +9,7 @@ from flask_cors import CORS
 from db_conn.dbHelper import get_connection
 from backend.routes.login import loginPage
 from backend.routes.inputs import inputsPage
+from backend.routes.defaults import defaultData
 
 
 load_dotenv(dotenv_path="../.env")
@@ -17,6 +18,7 @@ app = Flask(__name__)
 CORS(app)
 app.register_blueprint(loginPage)
 app.register_blueprint(inputsPage)
+app.register_blueprint(defaultData)
 
 #Snowflake Setup
 #----------------------------
