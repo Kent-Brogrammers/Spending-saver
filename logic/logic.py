@@ -15,24 +15,29 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 USE_GEMINI = True
-DEBUG_GEMINI = False
+DEBUG_GEMINI = True
 
 
 #----------Test data----------
-items = [
-    {"name": "Starbucks Latte", "price": 6.25, "frequency": "daily"},
-    {"name": "Groceries", "price": 85.00, "frequency": "weekly"},
-    {"name": "Uber Ride", "price": 18.50, "frequency": "one-time"},
-    {"name": "Netflix Subscription", "price": 15.99, "frequency": "monthly"},
-    {"name": "Chicken Breast", "price": 12.40, "frequency": "weekly"},
-    {"name": "Gym Membership", "price": 30.00, "frequency": "monthly"},
-    {"name": "DoorDash Order", "price": 22.75, "frequency": "one-time"},
-    {"name": "Gas", "price": 40.00, "frequency": "weekly"},
-    {"name": "Protein Powder", "price": 35.99, "frequency": "monthly"},
-    {"name": "Concert Ticket", "price": 120.00, "frequency": "one-time"},
-    {"name": "Water Bottle", "price": 2.00, "frequency": "daily"},
-    {"name": "New Shoes", "price": 85.00, "frequency": "yearly"}
-]
+request_data = {
+    "items": [
+        {"name": "Starbucks Latte", "price": 6.25, "frequency": "daily"},
+        {"name": "Groceries", "price": 85.00, "frequency": "weekly"},
+        {"name": "Uber Ride", "price": 18.50, "frequency": "one-time"},
+        {"name": "Netflix Subscription", "price": 15.99, "frequency": "monthly"},
+        {"name": "Chicken Breast", "price": 12.40, "frequency": "weekly"},
+        {"name": "Gym Membership", "price": 30.00, "frequency": "monthly"},
+        {"name": "DoorDash Order", "price": 22.75, "frequency": "one-time"},
+        {"name": "Gas", "price": 40.00, "frequency": "weekly"},
+        {"name": "Protein Powder", "price": 35.99, "frequency": "monthly"},
+        {"name": "Concert Ticket", "price": 120.00, "frequency": "one-time"},
+        {"name": "Water Bottle", "price": 2.00, "frequency": "daily"},
+        {"name": "New Shoes", "price": 85.00, "frequency": "yearly"}
+    ],
+    "this_week": 443.18,
+    "last_week": 300.00,
+    "preferences_text": "I care about fitness and convenience. Gym and Uber are essential for me."
+}
 
 #----------Helper function----------
 
@@ -81,10 +86,10 @@ def projections(waste):
     yearly = weekly * 52
 
     return {
-        "daily": daily,
-        "weekly": weekly,
-        "monthly": monthly,
-        "yearly": yearly
+        "daily": round(daily, 2),
+        "weekly": round(weekly, 2),
+        "monthly": round(monthly, 2),
+        "yearly": round(yearly, 2)
     }
 
 #----------Trends----------
@@ -256,18 +261,8 @@ def process_request(data):
 #----------Testing----------
 
 if __name__ == "__main__":
-    stats = analyze_spending(items, 120, 98)
-
-    print("\n=== Spending Analysis ===")
-    print(f"Total: ${stats['total']}")
-    print(f"Waste: ${stats['waste']}")
-    print(f"Trend: {stats['trend']}%")
-    print(f"Waste percentage: {stats['waste_percentage']}%")
-    print(stats["projections"])
-    print("\nInsight:\n")
-    print(stats["insight"])
-
-    # Backend output
-    print("\n=== API Response ===")
-    print(json.dumps(stats, indent=2))
+    result = process_request(request_data)
+    
+    print("\n=== FINAL SYSTEM TEST ===")
+    print(json.dumps(result, indent=2))
     
