@@ -26,14 +26,17 @@ def createAccount():
     if not username or not password or not full_name:
         return jsonify({"error": "Full name, username, and password required"}), 400
 
+    print('a')
+
     # Check if user exists
     result = get_connection(
         db="Users",
         query="SELECT COUNT(*) FROM Users WHERE username = %s",
         fetch_one=True,
         params=(username,)  # parameterized query
-
     )
+
+    print('b')
 
     if result[0] > 0:
         return jsonify({"error": "User already exists"}), 409
@@ -45,7 +48,8 @@ def createAccount():
     get_connection(
         db="Users",
         query="INSERT INTO Users (full_name, username, password) VALUES (%s, %s, %s)",
-        params=(full_name, username, hashed_password)
+        params=(full_name, username, hashed_password),
+        commit=True
     )
 
     return jsonify({"message": "User registered successfully"}), 201
