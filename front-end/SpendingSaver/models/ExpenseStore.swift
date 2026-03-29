@@ -9,7 +9,7 @@ import SwiftUI
 import Combine
 
 struct ExpenseItem: Identifiable {
-    let id = UUID()
+    let id: Int
     let name: String
     let amount: Double
     let category: String
@@ -80,10 +80,11 @@ class ExpenseStore: ObservableObject {
 
     private static func mapExpense(_ dto: ExpenseDTO) -> ExpenseItem {
         ExpenseItem(
+            id: dto.order_id ?? 0,
             name: dto.food_name ?? dto.name ?? "Unknown Item",
             amount: dto.cost ?? dto.amount ?? 0,
             category: dto.category ?? "Other",
-            frequency: "One Time",
+            frequency: dto.frequency ?? "one-time",
             isEssential: isEssentialCategory(dto.category),
             createdAt: parseDate(dto.order_datetime ?? dto.timestamp_column ?? dto.timestamp ?? dto.created_at)
         )
