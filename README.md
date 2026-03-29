@@ -15,8 +15,17 @@ This project analyzes user spending data and uses AI to classify purchases as es
 Example output:
 ```JSON
 {
-  "waste": 29.23,
-  "yearly": 10640.77
+  "total": 192.09,
+  "waste": 36.95,
+  "projections": {
+    "daily": 36.95,
+    "weekly": 258.63,
+    "monthly": 1034.52,
+    "yearly": 13448.77
+  },
+  "trend": 47.73,
+  "waste_percentage": 19.23,
+  "insight": "You spent $192.09 total, with $36.95 on non-essential items.\n\nAt this rate, that's $13448.77 per year.\n\nThat could be:\n9.0 vacations\n11.2 laptops\n\nYour spending is 47.7% more than last week."
 }
 ```
 *Meaning: You could be wasting over $10,000/year without realizing it.*
