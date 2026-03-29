@@ -22,7 +22,7 @@ def createAccount():
     password = data.get("password")
 
     if not username or not password or not full_name:
-        return jsonify({"error": "Username and password required"}), 400
+        return jsonify({"error": "Full name, username, and password required"}), 400
 
     # Check if user exists
     result = get_connection(
