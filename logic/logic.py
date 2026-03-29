@@ -27,7 +27,7 @@ def to_daily(price, frequency):
     elif frequency == "yearly":
         return price / 365
     else: # for one time purchases 
-        return price
+        return 0
 
 #----------Waste Claculator----------
 def waste_calculator(items):
@@ -47,7 +47,7 @@ def waste_calculator(items):
         total += daily_value
 
         if not item.get("essential", False):
-            waste += daily_value
+            waste += price
 
     waste_percentage = round((waste / total) * 100, 2) if total > 0 else 0
         
