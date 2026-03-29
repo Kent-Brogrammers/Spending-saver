@@ -11,7 +11,11 @@ struct AnalyticsView: View {
     @ObservedObject var expenseStore: ExpenseStore
 
     var totalSpent: Double {
-        expenseStore.expenses.reduce(0) { $0 + $1.amount}
+        expenseStore.expenses.reduce(0) { $0 + $1.amount }
+    }
+
+    var recentTransactions: [ExpenseItem] {
+        Array(expenseStore.expenses.prefix(3))
     }
     
     var body: some View {
@@ -28,7 +32,7 @@ struct AnalyticsView: View {
                         .foregroundColor(.white)
                         .font(.headline)
                     
-                    Text("$732.55")
+                    Text(totalSpent, format: .currency(code: "USD"))
                         .foregroundColor(.white)
                         .font(.system(size: 34, weight: .bold))
                     
@@ -54,9 +58,14 @@ struct AnalyticsView: View {
                         .font(.headline)
                         .foregroundColor(.white)
                     
-                    transactionRow("Bookstore", "$45.89")
-                    transactionRow("Gas Station", "$55.20")
-                    transactionRow("Coffee", "$4.75")
+                    if recentTransactions.isEmpty {
+                        Text("No expenses yet")
+                            .foregroundColor(.white.opacity(0.7))
+                    } else {
+                        ForEach(recentTransactions) { expense in
+                            transactionRow(expense.name, expense.amount.formatted(.currency(code: "USD")))
+                        }
+                    }
                 }
                 .padding(20)
                 .background(.ultraThinMaterial)

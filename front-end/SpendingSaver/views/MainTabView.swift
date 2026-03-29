@@ -54,6 +54,9 @@ struct MainTabView: View {
             .padding(.top, 20)
             .padding(.bottom, 12)
             .zIndex(0)
+            .task {
+                await expenseStore.loadExpenses()
+            }
             
             if showMenuOverlay {
                 Color.black.opacity(0.35)
@@ -123,6 +126,7 @@ extension MainTabView {
     func navButton(_ tab: AppTab, systemImage: String) -> some View {
         Button(action: {
             selectedMenuPage = nil
+            showMenuOverlay = false
             selectedTab = tab
         }) {
             Image(systemName: systemImage)
@@ -134,6 +138,8 @@ extension MainTabView {
     
     var addButton: some View {
         Button(action: {
+            selectedMenuPage = nil
+            showMenuOverlay = false
             selectedTab = .add
         }) {
             Image(systemName: "plus")
@@ -208,16 +214,15 @@ extension MainTabView {
                 menuRow(title: "History", systemImage: "clock.arrow.circlepath") {
                     selectedMenuPage = .history
                 }
-                
+
                 menuRow(title: "Health", systemImage: "heart.text.square") {
                     selectedMenuPage = .health
                 }
-                
+
                 menuRow(title: "Settings", systemImage: "gearshape") {
                     selectedMenuPage = .settings
                 }
             }
-
             Spacer()
         }
         .padding(24)

@@ -128,46 +128,30 @@ extension LoginView {
         }
     }
     
-    //bypass for testing
     private func login() async {
         errorMessage = ""
+
+        guard !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !password.isEmpty else {
+            errorMessage = "Enter username and password."
+            return
+        }
 
         isLoading = true
         defer { isLoading = false }
 
-        UserDefaults.standard.set("temp-token", forKey: "authToken")
-        UserDefaults.standard.set(1, forKey: "userID")
-        UserDefaults.standard.set(username.isEmpty ? "Chris" : username, forKey: "username")
+        do {
+            let result = try await AuthService.shared.login(username: username, password: password)
 
-        isLoggedIn = true
+            UserDefaults.standard.set(result.token, forKey: "authToken")
+            UserDefaults.standard.set(result.user_id, forKey: "userID")
+            UserDefaults.standard.set(username, forKey: "username")
+
+            isLoggedIn = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
-    
-    /*
-    private func login() async {
-            errorMessage = ""
-
-            guard !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                  !password.isEmpty else {
-                errorMessage = "Enter username and password."
-                return
-            }
-
-            isLoading = true
-            defer { isLoading = false }
-
-            do {
-                let result = try await AuthService.shared.login(username: username, password: password)
-
-                UserDefaults.standard.set(result.token, forKey: "authToken")
-                UserDefaults.standard.set(result.user_id, forKey: "userID")
-                UserDefaults.standard.set(username, forKey: "username")
-
-                isLoggedIn = true
-            } catch {
-                errorMessage = error.localizedDescription
-                
-            }
-        }*/
 }
 
 #Preview {
