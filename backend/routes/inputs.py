@@ -105,6 +105,25 @@ def removePref():
         # Handle any errors
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
+@inputsPage.route('/changePref', methods=['PUT'])
+@token_required
+def changePref():
+    data = request.json
+    user_id = request.user_id
+    preference = data.get("preference")
+
+    if not preference:
+        return jsonify({"error": "Preference is required"}), 400
+
+    query = "UPDATE Users.PUBLIC.Users SET PREFERENCE = %s WHERE ID = %s"
+    params = [preference, user_id,]
+
+    try:
+        get_connection("Users", query=query, params=params, commit=True)
+        return jsonify({"message": "Preference updated successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 
 @inputsPage.route('/analyze', methods=['POST'])
 @token_required

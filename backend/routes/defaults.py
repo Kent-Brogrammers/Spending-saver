@@ -34,3 +34,5 @@ def essList():
     )
     items = [{"food_name": row[0]} for row in rows]
     return jsonify(items), 200
+
+    
