@@ -1,34 +1,31 @@
 import os
-import snowflake.connector
+from pymongo import MongoClient
 
+def get_connection(db, collection=None, query=None, fetch_one=False, update=None, insert=None, delete=False):
+    client = MongoClient(os.getenv("MONGO_URI"))
+    database = client[db]
 
-import os
-import snowflake.connector
+    if collection is None:
+        return database
 
-def get_connection(db, query=None, fetch_one=False, params=None, commit=False):
-    conn = snowflake.connector.connect(
-        user=os.getenv("SW_USER"),
-        password=os.getenv("SW_PASS"),
-        account=os.getenv("SW_ACCOUNT"),
-        warehouse=os.getenv("SW_WAREHOUSE"),
-        database=db,
-        schema=os.getenv("SW_SCHEMA")
-    )
+    col = database[collection]
+
+    if insert:
+        col.insert_one(insert)
+        client.close()
+        return None
+
+    if delete and query:
+        col.delete_one(query)
+        client.close()
+        return None
+
+    if update and query:
+        col.update_one(query, {"$set": update})
+        client.close()
+        return None
+
     if query:
-        cur = conn.cursor()
-        if params:
-            cur.execute(query, params)
-        else:
-            cur.execute(query)
-        
-        if commit:
-            conn.commit()
-            cur.close()
-            conn.close()
-            return None
-        
-        result = cur.fetchone() if fetch_one else cur.fetchall()
-        cur.close()
-        conn.close()
-        return result
-    return conn
+        return col.find_one(query) if fetch_one else list(col.find(query))
+
+    return col
