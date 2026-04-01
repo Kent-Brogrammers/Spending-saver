@@ -1,9 +1,9 @@
 import os
 from pymongo import MongoClient
 
-def get_connection(db, collection=None, query=None, fetch_one=False, update=None, insert=None, delete=False):
+def get_connection(collection=None, query=None, fetch_one=False, update=None, insert=None, delete=False):
     client = MongoClient(os.getenv("MONGO_URI"))
-    database = client[db]
+    database = client[os.getenv("MONGO_DB_NAME")]
 
     if collection is None:
         return database

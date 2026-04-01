@@ -1,19 +1,14 @@
 from flask import Blueprint, jsonify, request
 from db_conn.dbHelper import get_connection
-import bcrypt, jwt, datetime
-import os
+import bcrypt, jwt, datetime, os, uuid
 
 loginPage = Blueprint("loginPage", __name__, url_prefix="/login")
-
-SECRET_KEY = os.getenv("SECRET_KEY")  # for JWT
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 @loginPage.route('/')
 def loginHome():
-    db_name = get_connection(db="Users", query="SELECT CURRENT_DATABASE()", fetch_one=True)[0]
-    return jsonify({"current_database": db_name})
+    return jsonify({"message": "MongoDB connected"})
 
-#REGISTER
-#----------------------------
 @loginPage.route('/create_account', methods=['POST'])
 def createAccount():
     data = request.json
@@ -21,41 +16,29 @@ def createAccount():
     username = data.get("username")
     password = data.get("password")
 
-    print(data)
-
     if not username or not password or not full_name:
         return jsonify({"error": "Full name, username, and password required"}), 400
 
-    print('a')
-
-    # Check if user exists
-    result = get_connection(
-        db="Users",
-        query="SELECT COUNT(*) FROM Users.PUBLIC.Users WHERE username = %s",
-        fetch_one=True,
-        params=(username,)  # parameterized query
-    )
-
-    print('b')
-
-    if result[0] > 0:
+    existing = get_connection(collection="users", query={"email": username}, fetch_one=True)
+    if existing:
         return jsonify({"error": "User already exists"}), 409
 
-    # Hash password
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-    # Insert new user
-    get_connection(
-        db="Users",
-        query="INSERT INTO Users.PUBLIC.Users (full_name, username, password) VALUES (%s, %s, %s)",
-        params=(full_name, username, hashed_password),
-        commit=True
-    )
+    doc = {
+        "_id": str(uuid.uuid4()),
+        "name": full_name,
+        "email": username,
+        "password": hashed_password,
+        "preferences": "",
+        "created_at": datetime.datetime.utcnow().isoformat(),
+        "updated_at": datetime.datetime.utcnow().isoformat(),
+    }
 
+    get_connection(collection="users", insert=doc)
     return jsonify({"message": "User registered successfully"}), 201
 
-#LOGIN
-#--------------------------
+
 @loginPage.route('/login', methods=['POST'])
 def loginAccount():
     data = request.json
@@ -65,29 +48,16 @@ def loginAccount():
     if not username or not password:
         return jsonify({"error": "Username and password required"}), 400
 
-    # Fetch hashed password from DB
-    result = get_connection(
-        db="Users",
-        query="SELECT ID, PASSWORD FROM Users.PUBLIC.Users WHERE USERNAME = %s",
-        fetch_one=True,
-        params=(username,)
-    )
-
-
-    if not result:
+    user = get_connection(collection="users", query={"email": username}, fetch_one=True)
+    if not user:
         return jsonify({"error": "User not found"}), 404
 
-    user_id, stored_hash  = result
-    stored_hash = stored_hash.encode('utf-8')
-
-    # Verify password
-    if not bcrypt.checkpw(password.encode('utf-8'), stored_hash):
+    if not bcrypt.checkpw(password.encode("utf-8"), user["password"].encode("utf-8")):
         return jsonify({"error": "Incorrect password"}), 401
 
-    # Generate JWT token
     token = jwt.encode(
         {
-            "user_id": user_id,
+            "user_id": user["_id"],
             "username": username,
             "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
         },
@@ -95,4 +65,4 @@ def loginAccount():
         algorithm="HS256"
     )
 
-    return jsonify({"message": "Login successful", "token": token, 'user_id':user_id})
+    return jsonify({"message": "Login successful", "token": token, "user_id": user["_id"]})
