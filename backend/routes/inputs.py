@@ -1,34 +1,35 @@
 from flask import Blueprint, jsonify, request
 from db_conn.dbHelper import get_connection
-import os
+import os, datetime, uuid
 from token_validator.tv import token_required
 from logic.logic import *
-import datetime
 
 inputsPage = Blueprint("inputsPage", __name__, url_prefix="/inputs")
+SECRET_KEY = os.getenv("SECRET_KEY")
 
-SECRET_KEY = os.getenv("SECRET_KEY")  # for JWT
-
-#
 @inputsPage.route('/insertFood', methods=['POST'])
 @token_required
 def insertOrders():
     data = request.json
-    user_id = request.user_id   
+    user_id = request.user_id
 
-    query = query = """INSERT INTO orderitems (ID, food_name, cost, order_datetime, category, order_id, dow, FREQUENCY)
-VALUES (%s, %s, %s, CURRENT_TIMESTAMP(), %s, order_id_seq.NEXTVAL, TO_CHAR(CURRENT_TIMESTAMP(), 'Day'), %s)
-"""
-
-
-    params = [user_id, data.get("Name"), data.get("Cost"), data.get("Category"), data.get("Frequency")]
+    doc = {
+        "order_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "food_name": data.get("Name"),
+        "food_cost": float(data.get("Cost", 0)),
+        "category": data.get("Category"),
+        "essential": data.get("Essential", False),
+        "order_datetime": datetime.datetime.utcnow().isoformat(),
+    }
 
     try:
-        get_connection("ITEMS_DB", query=query, params=params, commit=True)
+        get_connection(collection="orders", insert=doc)
         return jsonify({"message": "Order inserted successfully!"}), 201
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-    
+
+
 @inputsPage.route('/deleteFood', methods=['DELETE'])
 @token_required
 def deleteOrder():
@@ -39,16 +40,13 @@ def deleteOrder():
     if not order_id:
         return jsonify({"error": "order_id is required"}), 400
 
-    query = "DELETE FROM orderitems WHERE order_id = %s AND ID = %s"
-    params = [order_id, user_id,]
-
     try:
-        get_connection("ITEMS_DB", query=query, params=params, commit=True)
+        get_connection(collection="orders", query={"order_id": order_id, "user_id": user_id}, delete=True)
         return jsonify({"message": "Order deleted successfully!"}), 200
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
-# Insert a food preference
+
 @inputsPage.route('/insertPref', methods=['POST'])
 @token_required
 def insertPref():
@@ -56,28 +54,27 @@ def insertPref():
     user_id = request.user_id
     food_name = data.get("food_name")
 
-    # Check if food_name is provided
     if not food_name:
         return jsonify({"error": "Food name is required"}), 400
 
-    # Query to insert the food preference
-    query = """
-    INSERT INTO FOOD_PREFERENCES (ID, food_name)
-    VALUES (%s, %s)
-    """
-
-    params = [user_id, food_name,]
+    # Store essentials as orders with essential=True
+    doc = {
+        "order_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "food_name": food_name,
+        "food_cost": 0.0,
+        "category": "preference",
+        "essential": True,
+        "order_datetime": datetime.datetime.utcnow().isoformat(),
+    }
 
     try:
-        # Insert the food preference into the database
-        get_connection("Users", query=query, params=params, commit=True)
-        return jsonify({"message": f"Food preference '{food_name}' added for user {user_id}."}), 201
+        get_connection(collection="orders", insert=doc)
+        return jsonify({"message": f"Food preference '{food_name}' added."}), 201
     except Exception as e:
-        # Handle any errors
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
-# Remove a food preference
 @inputsPage.route('/removePref', methods=['DELETE'])
 @token_required
 def removePref():
@@ -85,25 +82,15 @@ def removePref():
     user_id = request.user_id
     food_name = data.get("food_name")
 
-    # Check if food_name is provided
     if not food_name:
         return jsonify({"error": "Food name is required"}), 400
 
-    # Query to remove the food preference
-    query = """
-    DELETE FROM FOOD_PREFERENCES
-    WHERE ID = %s AND food_name = %s
-    """
-
-    params = [user_id, food_name]
-
     try:
-        # Perform the delete operation
-        get_connection("Users", query=query, params=params, commit=True)
-        return jsonify({"message": f"Food preference '{food_name}' removed for user {user_id}."}), 200
+        get_connection(collection="orders", query={"user_id": user_id, "food_name": food_name, "essential": True}, delete=True)
+        return jsonify({"message": f"Food preference '{food_name}' removed."}), 200
     except Exception as e:
-        # Handle any errors
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 
 @inputsPage.route('/changePref', methods=['PUT'])
 @token_required
@@ -115,16 +102,14 @@ def changePref():
     if not preference:
         return jsonify({"error": "Preference is required"}), 400
 
-    query = "UPDATE Users.PUBLIC.Users SET PREFERENCEs = %s WHERE ID = %s"
-    params = [preference, user_id,]
-
     try:
-        get_connection("Users", query=query, params=params, commit=True)
+        get_connection(collection="users", query={"_id": user_id}, update={"preferences": preference})
         return jsonify({"message": "Preference updated successfully!"}), 200
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
-@inputsPage.route('/changeName', methods=['POST'])
+
+@inputsPage.route('/changeName', methods=['PUT'])
 @token_required
 def changeName():
     data = request.json
@@ -134,15 +119,11 @@ def changeName():
     if not full_name:
         return jsonify({"error": "Full name is required"}), 400
 
-    query = "UPDATE Users.PUBLIC.Users SET FULL_NAME = %s WHERE ID = %s"
-    params = [full_name, user_id]
-
     try:
-        get_connection("Users", query=query, params=params, commit=True)
+        get_connection(collection="users", query={"_id": user_id}, update={"name": full_name})
         return jsonify({"message": "Name updated successfully!"}), 200
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-
 
 
 @inputsPage.route('/analyze', methods=['POST'])
@@ -150,42 +131,23 @@ def changeName():
 def analyze():
     user_id = request.user_id
 
-    # Fetch items from DB
-    rows = get_connection(
-    'ITEMS_DB',
-    '''
-    SELECT 
-        i.FOOD_NAME,
-        i.COST,
-        i.FREQUENCY,
-        i.ESSENTIAL,
-        i.ORDER_DATETIME
-    FROM ITEMS_DB.PUBLIC.ORDERITEMS i
-    WHERE i.ID = %s
-    ''',
-    False,
-    params=[user_id]
-)
+    rows = get_connection(collection="orders", query={"user_id": user_id})
 
-    # Convert tuples to dicts
     items = [
-    {
-        "name": row[0],
-        "price": float(row[1]),
-        "frequency": (row[2] or "one-time").lower().replace("_", "-"),
-        "essential": bool(row[3]),
-        "timestamp": row[4]
-    }
-    for row in rows
-]
+        {
+            "name": row.get("food_name"),
+            "price": float(row.get("food_cost", 0)),
+            "essential": bool(row.get("essential", False)),
+            "timestamp": datetime.datetime.fromisoformat(row.get("order_datetime")),
+        }
+        for row in rows
+    ]
 
-    # Date calculations
     today = datetime.date.today()
     start_of_this_week = today - datetime.timedelta(days=today.weekday())
     start_of_last_week = start_of_this_week - datetime.timedelta(weeks=1)
 
-    this_week_items = []
-    last_week_items = []
+    this_week_items, last_week_items = [], []
 
     for item in items:
         item_date = item["timestamp"].date()
@@ -194,7 +156,7 @@ def analyze():
         elif start_of_last_week <= item_date < start_of_last_week + datetime.timedelta(weeks=1):
             last_week_items.append(item)
 
-    this_week_total = sum(item["price"] for item in this_week_items)
-    last_week_total = sum(item["price"] for item in last_week_items)
+    this_week_total = sum(i["price"] for i in this_week_items)
+    last_week_total = sum(i["price"] for i in last_week_items)
 
     return jsonify(analyze_spending(items, this_week_total, last_week_total))
